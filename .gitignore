@@ -1,0 +1,25 @@
+# Virtual Environment
+venv/
+.env/
+
+# Compiled Python files
+*.pyc
+__pycache__/
+
+
+# Media files
+media/
+
+# Collected static files (if generated during deployment)
+staticfiles/
+
+# Local settings
+local_settings.py
+
+# Log files
+*.log
+
+# IDE/Editor specific files
+.vscode/
+.idea/
+.DS_Store
