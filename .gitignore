@@ -5,6 +5,7 @@ venv/
 # Compiled Python files
 *.pyc
 __pycache__/
+pedidos/__pycache__/
 
 
 # Media files
