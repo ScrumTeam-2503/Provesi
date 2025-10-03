@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .logic.pedido_logic import get_pedidos, get_pedido_by_id
+from .logic.pedido_logic import get_pedidos, get_pedido_by_id, get_pedido_items
 
 # Create your views here.
 def pedidos_list(request):
@@ -9,11 +9,8 @@ def pedidos_list(request):
 
 def pedido_detail(request, id):
     pedido = get_pedido_by_id(id)
-    factura = getattr(pedido, 'factura', None)
     
-    context = {
-        'pedido': pedido,
-        'factura': factura 
-    }
+    pedido['factura'] = getattr(pedido, 'factura', None)
+    pedido['items'] = get_pedido_items(id)
 
-    return 0
+    return JsonResponse(pedido, safe=False)
