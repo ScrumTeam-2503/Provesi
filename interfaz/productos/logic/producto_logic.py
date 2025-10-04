@@ -1,6 +1,11 @@
 import requests
 
-base_url = 'http://localhost:8002/'
+host = 'localhost'
+port = '8002'
 
 def get_productos():
-    return requests.get(base_url + 'productos/')
+    return requests.get(f"http://{host}:{port}/productos/").json()
+
+def get_producto_by_codigo(codigo):
+    print(codigo)
+    return requests.get(f"http://{host}:{port}/productos/{codigo}/").json()

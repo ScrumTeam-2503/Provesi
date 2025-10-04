@@ -35,7 +35,7 @@
                         <tbody>
 
                         {% for pedido in pedidos_list %}
-                        <tr onclick="" style="cursor:pointer;">
+                        <tr onclick="window.location.href='{% url 'pedidoDetail' pedido.id %}'" style="cursor:pointer;">
                             <td>{{ pedido.id }}</td>
                             <td>{{ pedido.estado }}</td>
                             <td>{{ pedido.metodo_pago }}</td>

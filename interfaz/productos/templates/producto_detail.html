@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Detalle del Producto</h2>
+    <p><b>Codigo:</b> {{ producto.codigo }}</p>
+    <p><b>Nombre:</b> {{ producto.nombre }}</p>
+    <p><b>Descripcion:</b> {{ producto.descripcion }}</p>
+    <p><b>Precio:</b> $ {{ producto.precio|intcomma }}</p>
+
+    <hr>
+
+    <br>
+    <a href="{% url 'productosList' %}" class="btn btn-primary waves-effect waves-light">Volver</a>
+</div>
+
+{% endblock %}

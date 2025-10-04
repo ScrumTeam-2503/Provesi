@@ -36,7 +36,7 @@
                         <tbody>
 
                         {% for producto in productos_list %}
-                        <tr onclick="" style="cursor:pointer;">
+                        <tr onclick="window.location.href='{% url 'productoDetail' producto.codigo %}'" style="cursor:pointer;">
                             <td>{{ producto.codigo }}</td>
                             <td>{{ producto.nombre }}</td>
                             <td>{{ producto.descripcion }}</td>
