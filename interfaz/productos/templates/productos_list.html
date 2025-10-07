@@ -29,7 +29,6 @@
                         <tr style="color:#0E2EB0">
                             <th>Código</th>
                             <th>Nombre</th>
-                            <th>Descripcion</th>
                             <th>Precio</th>
                         </tr>
                         </thead>
@@ -39,7 +38,6 @@
                         <tr onclick="window.location.href='{% url 'productoDetail' producto.codigo %}'" style="cursor:pointer;">
                             <td>{{ producto.codigo }}</td>
                             <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.descripcion }}</td>
                             <td>$ {{ producto.precio|intcomma }}</td>
                         </tr>
                         {% endfor %}
