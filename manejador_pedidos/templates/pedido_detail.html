@@ -12,14 +12,6 @@
 
     <hr>
 
-    {% if pedido.factura %}
-    <h3>Factura</h3>
-    <p><b>Fecha emisión:</b> {{ pedido.factura.fecha }}</p>
-    <p><b>Total:</b> ${{ pedido.factura.total }}</p>
-    {% else %}
-    <p>No se ha generado factura para este pedido.</p>
-    {% endif %}
-
     <h3>Items del pedido</h3>
     {% if items %}
         <table class="table table-striped table-hover mt-3">

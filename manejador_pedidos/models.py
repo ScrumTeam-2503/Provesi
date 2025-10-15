@@ -56,3 +56,37 @@ class Pedido(models.Model):
             'fecha_creacion': self.fecha_creacion,
             'fecha_actualizacion': self.fecha_actualizacion,
         }
+
+class Item(models.Model):
+    """
+    Modelo que representa un ítem dentro de un pedido en el sistema WMS Provesi.
+
+    Contiene información sobre el producto, cantidad y precio asociado al ítem.
+    """
+
+    pedido = models.ForeignKey(
+        Pedido,
+        related_name='items',
+        on_delete=models.CASCADE,
+        help_text="Pedido al que pertenece este ítem."
+    )
+
+    producto = models.CharField(
+        max_length=100,
+        help_text="Nombre del producto."
+    )
+
+    cantidad = models.PositiveIntegerField(
+        help_text="Cantidad del producto en el ítem."
+    )
+
+    def __str__(self):
+        return f"Item {self.id} - {self.producto} (x{self.cantidad})"
+    
+    def toJson(self):
+        return {
+            'id': self.id,
+            'pedido_id': self.pedido.id,
+            'producto': self.producto,
+            'cantidad': self.cantidad,
+        }

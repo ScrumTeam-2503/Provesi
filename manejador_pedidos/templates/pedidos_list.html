@@ -40,7 +40,7 @@
                         <tbody>
 
                         {% for pedido in pedidos_list %}
-                        <tr style="cursor:pointer;">
+                        <tr onclick="window.location.href='{% url 'pedidoDetail' pedido.id %}'" style="cursor:pointer;">
                             <td>{{ pedido.id }}</td>
                             <td>{{ pedido.estado }}</td>
                             <td>{{ pedido.metodo_pago }}</td>
@@ -55,7 +55,7 @@
                     <div style="text-align:center;">
                         <button type="button" class="btn btn-primary waves-effect waves-light"
                                 onClick=" window.location.href='/' ">
-                            Back
+                            Volver
                         </button>
                     </div>
 

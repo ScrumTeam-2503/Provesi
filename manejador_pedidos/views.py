@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from .forms import PedidoForm
 
-from .logic.pedido_logic import get_pedidos, create_pedido
+from .logic.pedido_logic import get_pedidos, get_pedido_by_id, create_pedido
 
 def pedidos_list(request):
     """
@@ -19,6 +19,20 @@ def pedidos_list(request):
     }
 
     return render(request, 'pedidos_list.html', context)
+
+def pedido_detail(request, pedido_id):
+    """
+    Vista para mostrar los detalles de un pedido específico.
+    
+    Renderiza la plantilla 'pedidos_detail.html' con el contexto del pedido.
+    """
+    pedido = get_pedido_by_id(pedido_id)
+
+    context = {
+        'pedido': pedido
+    }
+
+    return render(request, 'pedido_detail.html', context)
 
 def pedido_create(request):
     """
