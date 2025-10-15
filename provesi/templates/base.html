@@ -1,0 +1,59 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}WMS Provesi{% endblock %}</title>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <nav class="navbar navbar-light bg-light">
+        <a class="navbar-brand" href="/">
+          <img src="/static/media/logo-uniandes.png" width="45" height="45" alt="" />
+        </a>
+      </nav>
+
+      <nav class="navbar navbar-light bg-light">
+        <a class="navbar-brand" href="/"> WMS Provesi </a>
+      </nav>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="">Pedidos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="">Productos</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="m-4">
+      <div class="container p-4">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </body>
+
+  <!-- Footer -->
+  <footer>
+    <div style="padding: 30px">
+      <div style="float: left; width: 400px">
+        ISIS-2503 Arquitectura y Diseño de Software
+      </div>
+      <div style="float: right; width: 220px">Universidad de los Andes</div>
+      <br />
+      <div style="float: left; width: 400px">
+        <i>SCRUM Team</i>
+      </div>
+    </div>
+  </footer>
+  <!-- Footer -->
+</html>
