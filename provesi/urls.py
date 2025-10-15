@@ -22,11 +22,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Urls for home page
-    #path('', views.index),
+    path('', views.index, name='home'),
 
     # Urls for manejador_pedidos app
     path('manejador_pedidos/', include('manejador_pedidos.urls')),
 
     # Urls for manejador_inventario app
-    path('', include('manejador_inventario.urls')),
+    path('manejador_inventario/', include('manejador_inventario.urls')),
 ]

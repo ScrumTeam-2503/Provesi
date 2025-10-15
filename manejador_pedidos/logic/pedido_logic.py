@@ -12,7 +12,7 @@ def get_pedido_by_id(pedido_id):
     Obtiene un pedido específico por su ID.
     """
     queryset = Pedido.objects.get(id=pedido_id)
-    return queryset
+    return (queryset)
 
 def create_pedido(form):
     """

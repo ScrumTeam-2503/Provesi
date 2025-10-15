@@ -71,7 +71,7 @@ def item_create(request, pedido_id):
 
         if form.is_valid():
             item = create_item(form, pedido)
-            messages.add_message(request, messages.SUCCESS, f"Ítem {item.producto} agregado al pedido {pedido.id} exitosamente.")
+            messages.add_message(request, messages.SUCCESS, f"Ítem {item.producto} agregado exitosamente.")
             return HttpResponseRedirect(reverse('pedidoDetail', args=[pedido.id]))
     else:
         form = ItemForm()

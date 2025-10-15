@@ -28,7 +28,7 @@
                     <i class="fas fa-check"></i> Agregar Item
                 </button>
                 <button type="button" class="btn btn-secondary"
-                        onclick="window.location.href='/pedidos'">
+                        onclick="window.location.href='{% url 'pedidoDetail' pedido.id %}'">
                     <i class="fas fa-arrow-left"></i> Cancelar
                 </button>
             </div>
