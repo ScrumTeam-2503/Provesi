@@ -25,5 +25,8 @@ urlpatterns = [
     #path('', views.index),
 
     # Urls for manejador_pedidos app
-    path('', include('manejador_pedidos.urls')),
+    path('manejador_pedidos/', include('manejador_pedidos.urls')),
+
+    # Urls for manejador_inventario app
+    path('', include('manejador_inventario.urls')),
 ]
