@@ -10,4 +10,7 @@ urlpatterns = [
 
     # Ruta para crear un nuevo pedido
     path("pedidos/create/", views.pedido_create, name="pedidoCreate"),
+
+    # Ruta para agregar un ítem a un pedido específico
+    path("pedidos/<int:pedido_id>/itemsCreate/", views.item_create, name="itemCreate"),
 ]
