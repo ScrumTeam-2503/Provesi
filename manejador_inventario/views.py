@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from .forms import BodegaForm
 
-from .logic.bodega_logic import get_bodegas, create_bodega
+from .logic.bodega_logic import get_bodegas, get_bodega_by_id, create_bodega
 
 def bodegas_list(request):
     """
@@ -19,6 +19,20 @@ def bodegas_list(request):
     }
 
     return render(request, 'bodegas_list.html', context)
+
+def bodega_detail(request, id_bodega):
+    """
+    Vista para ver los detalles de una bodega específica.
+    
+    Renderiza la plantilla 'bodega_detail.html' con el contexto de la bodega.
+    """
+    bodega = get_bodega_by_id(id_bodega)
+
+    context = {
+        'bodega': bodega
+    }
+
+    return render(request, 'bodega_detail.html', context)
 
 def bodega_create(request):
     """

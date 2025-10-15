@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Detalle de la Bodega #{{ bodega.id }}</h2>
+    <p><b>Ciudad:</b> {{ bodega.ciudad }}</p>
+    <p><b>Dirección:</b> {{ bodega.direccion }}</p>
+
+    <hr>
+
+    <br>
+    <a href="{% url 'bodegasList' %}" class="btn btn-primary waves-effect waves-light">Volver</a>
+</div>
+
+{% endblock %}

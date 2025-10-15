@@ -38,7 +38,7 @@
                         <tbody>
 
                         {% for bodega in bodegas_list %}
-                        <tr onclick="window.location.href='{% url 'bodegasList' %}'" style="cursor:pointer;">
+                        <tr onclick="window.location.href='{% url 'bodegaDetail' bodega.id %}'" style="cursor:pointer;">
                             <td>{{ bodega.id }}</td>
                             <td>{{ bodega.ciudad }}</td>
                             <td>{{ bodega.direccion }}</td>
