@@ -6,8 +6,13 @@
         <div class="page-header-title">
             <h4 class="page-title">Pedidos</h4>
             <div style="text-align:right;">
-                <button type="button" class="btn btn-success waves-effect waves-light"
-                        onClick=" window.location.href='/variablecreate' " style="text-align:center;">+
+                <button 
+                type="button" 
+                class="btn btn-success waves-effect waves-light"        
+                onclick="window.location.href='{% url 'pedidoCreate' %}'" 
+                style="text-align:center;"
+                >
+                    +
                 </button>
             </div>
         </div>
@@ -35,7 +40,7 @@
                         <tbody>
 
                         {% for pedido in pedidos_list %}
-                        <tr onclick="window.location.href='{% url 'pedidoDetail' pedido.id %}'" style="cursor:pointer;">
+                        <tr style="cursor:pointer;">
                             <td>{{ pedido.id }}</td>
                             <td>{{ pedido.estado }}</td>
                             <td>{{ pedido.metodo_pago }}</td>

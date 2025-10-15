@@ -23,9 +23,8 @@ def get_pedido_items(pedido_id):
 
     return list(queryset.values())
 
-def create_pedido(serializer):
-    if serializer.is_valid():
-        serializer.save()
-        return ()
-    
-    return 'Bad request'
+def create_pedido(form):
+    pedido = form.save()
+    pedido.save()
+
+    return pedido
