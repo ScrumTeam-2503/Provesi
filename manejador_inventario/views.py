@@ -3,12 +3,12 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 
-from .forms import BodegaForm, EstanteriaForm, UbicacionForm
+from .forms import BodegaForm, EstanteriaForm, UbicacionForm, ProductoForm
 
 from .logic.bodega_logic import get_bodegas, get_bodega_by_codigo, create_bodega
 from .logic.estanteria_logic import create_estanteria, get_estanteria_by_codigo
 from .logic.ubicacion_logic import create_ubicacion
-from .logic.producto_logic import get_productos
+from .logic.producto_logic import get_productos, get_producto_by_codigo, create_producto
 
 def bodegas_list(request):
     """
@@ -67,11 +67,25 @@ def productos_list(request):
 
     return render(request, 'productos_list.html', context)
 
+def producto_detail(request, codigo_producto):
+    """
+    Vista para ver los detalles de un producto específico.
+    
+    Renderiza la plantilla 'producto_detail.html' con el contexto del producto.
+    """
+    producto = get_producto_by_codigo(codigo_producto)
+    context = {
+        'producto': producto,
+        'ubicaciones': producto.ubicaciones.all()
+    }
+
+    return render(request, 'producto_detail.html', context)
+
 def bodega_create(request):
     """
     Vista para crear una nueva bodega.
     
-    Renderiza la plantilla 'bodega_create.html' con el formulario de creación de bodega.
+    Renderiza la plantilla 'create_form.html' con el formulario de creación de bodega.
     """
     if request.method == 'POST':
         form = BodegaForm(request.POST)
@@ -96,7 +110,7 @@ def estanteria_create(request, codigo_bodega):
     """
     Vista para agregar una estantería a una bodega específica.
     
-    Renderiza la plantilla 'estanteria_create.html' con el formulario de creación de estantería.
+    Renderiza la plantilla 'create_form.html' con el formulario de creación de estantería.
     """
     bodega = get_bodega_by_codigo(codigo_bodega)
 
@@ -141,6 +155,31 @@ def ubicacion_create(request, codigo_bodega, zona_estanteria, codigo_estanteria)
         'titulo': 'Agregar Ubicación',
         'accion': 'Guardar Ubicación',
         'cancel_url': reverse('estanteriaDetail', args=[bodega.codigo, estanteria.zona, estanteria.codigo])
+    }
+
+    return render(request, 'create_form.html', context)
+
+def producto_create(request):
+    """
+    Vista para crear un nuevo producto.
+    
+    Renderiza la plantilla 'create_form.html' con el formulario de creación de producto.
+    """
+    if request.method == 'POST':
+        form = ProductoForm(request.POST)
+
+        if form.is_valid():
+            producto = create_producto(form)
+            messages.add_message(request, messages.SUCCESS, f"Producto {producto.codigo} creado exitosamente.")
+            return HttpResponseRedirect(reverse('productosList'))
+    else:
+        form = ProductoForm()
+
+    context = {
+        'form': form,
+        'titulo': 'Crear Producto',
+        'accion': 'Guardar Producto',
+        'cancel_url': reverse('productosList')
     }
 
     return render(request, 'create_form.html', context)

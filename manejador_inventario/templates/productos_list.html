@@ -8,7 +8,7 @@
         <button 
             type="button" 
             class="btn btn-success waves-effect waves-light"        
-            onclick="window.location.href='{% url 'productosList' %}'"
+            onclick="window.location.href='{% url 'productoCreate' %}'"
         >
             + Nuevo
         </button>
@@ -17,26 +17,27 @@
     <div class="page-content-wrapper mt-4">
         <div class="container">
             
-            {% if bodegas_list %}
+            {% if productos_list %}
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr style="color:#0E2EB0;">
                             <th>Código</th>
                             <th>Nombre</th>
                             <th>Descripción</th>
-                            <th>Precio</th>
+                            <th>Precio Unitario</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for producto in productos_list %}
                         <tr 
-                            onclick="window.location.href='{% url 'home' %}'" 
+                            onclick="window.location.href='{% url 'productoDetail' producto.codigo %}'" 
                             style="cursor:pointer;"
                             class="table-row-hover"
                         >
                             <td><b>{{ producto.codigo }}</b></td>
                             <td>{{ producto.nombre }}</td>
                             <td>{{ producto.descripcion }}</td>
+                            <td>$ {{ producto.precio|intcomma }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

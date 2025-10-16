@@ -1,5 +1,5 @@
 from django import forms
-from .models import Bodega, Estanteria, Ubicacion
+from .models import Bodega, Estanteria, Ubicacion, Producto
 
 class BodegaForm(forms.ModelForm):
     class Meta:
@@ -45,4 +45,20 @@ class UbicacionForm(forms.ModelForm):
             'codigo': 'Código',
             'capacidad': 'Capacidad',
             'stock': 'Stock',
+        }
+
+class ProductoForm(forms.ModelForm):
+    class Meta:
+        model = Producto
+        fields = [
+            'codigo',
+            'nombre',
+            'descripcion',
+            'precio'
+        ]
+        labels = {
+            'codigo': 'Código',
+            'nombre': 'Nombre',
+            'descripcion': 'Descripción',
+            'precio': 'Precio',
         }

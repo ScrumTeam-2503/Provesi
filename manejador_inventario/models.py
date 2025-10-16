@@ -127,7 +127,7 @@ class Ubicacion(models.Model):
     producto = models.ForeignKey(
         Producto,
         on_delete=models.CASCADE,
-        related_name='ubicacion',
+        related_name='ubicaciones',
         null=True,
         blank=True,
         help_text="Producto almacenado en la ubicación (si hay alguno)."

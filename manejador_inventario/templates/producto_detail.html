@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Producto {{ producto.codigo }}</h2>
+    <p><b>Nombre:</b> {{ producto.nombre }}</p>
+    <p><b>Descripción:</b> {{ producto.descripcion }}</p>
+    <p><b>Precio Unitario:</b> ${{ producto.precio|intcomma }}</p>
+
+    <hr>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Ubicaciones</h3>
+    </div>
+
+    {% if ubicaciones %}
+        <div class="row row-cols-1 row-cols-md-2 g-3">
+            {% for ubicacion in ubicaciones %}
+                <div class="col">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                {{ ubicacion.estanteria.bodega.ciudad }} ({{ ubicacion.estanteria.bodega.codigo }})
+                            </h5>
+                            <p class="mb-1"><b>Dirección:</b> {{ ubicacion.estanteria.bodega.direccion }}</p>
+                            <p class="mb-1"><b>Ubicación:</b> {{ ubicacion.estanteria.zona }}{{ ubicacion.estanteria.codigo }}{{ ubicacion.nivel }}{{ ubicacion.codigo }}</p>
+                            <p class="mb-1"><b>Capacidad:</b> {{ ubicacion.capacidad }}</p>
+                            <p class="mb-1"><b>Stock:</b> {{ ubicacion.stock }}</p>
+                            <p class="mb-2"><b>Última actualización:</b> {{ ubicacion.fecha_actualizacion|naturaltime }}</p>
+                            <div class="text-end">
+                                <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm">
+                                    Modificar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-secondary text-center mt-4">
+            Este producto no ha sido ubicado.
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'productosList' %}" class="btn btn-primary">
+            ← Volver
+        </a>
+    </div>
+</div>
+{% endblock %}
