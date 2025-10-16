@@ -21,6 +21,6 @@ class ItemForm(forms.ModelForm):
             'cantidad'
         ]
         labels = {
-            'producto': 'Código del producto',
+            'producto': 'Producto',
             'cantidad': 'Cantidad',
         }

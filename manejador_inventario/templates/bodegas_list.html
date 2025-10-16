@@ -9,13 +9,13 @@
             class="btn btn-success waves-effect waves-light"        
             onclick="window.location.href='{% url 'bodegaCreate' %}'"
         >
-            + Nueva
+            <i class="bi bi-plus-circle"></i> Nueva
         </button>
     </div>
 
     <div class="page-content-wrapper mt-4">
         <div class="container">
-            
+
             {% if bodegas_list %}
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">

@@ -53,10 +53,13 @@ def pedido_create(request):
         form = PedidoForm()
     
     context = {
-        'form': form
+        'form': form,
+        'titulo': 'Crear Pedido',
+        'accion': 'Guardar Pedido',
+        'cancel_url': reverse('pedidosList')
     }
 
-    return render(request, 'pedido_create.html', context)
+    return render(request, 'create_form.html', context)
 
 def item_create(request, pedido_id):
     """
@@ -78,7 +81,10 @@ def item_create(request, pedido_id):
     
     context = {
         'form': form,
-        'pedido': pedido
+        'pedido': pedido,
+        'titulo': 'Agregar Item',
+        'accion': 'Guardar Item',
+        'cancel_url': reverse('pedidoDetail', args=[pedido.id])
     }
 
-    return render(request, 'item_create.html', context)
+    return render(request, 'create_form.html', context)

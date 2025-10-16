@@ -18,7 +18,7 @@ def bodegas_list(request):
     """
     bodegas = get_bodegas()
     context = {
-        'bodegas_list': bodegas
+        'bodegas_list': bodegas.order_by('codigo')
     }
 
     return render(request, 'bodegas_list.html', context)
@@ -49,7 +49,7 @@ def estanteria_detail(request, codigo_bodega, zona_estanteria, codigo_estanteria
 
     context = {
         'estanteria': estanteria,
-        'ubicaciones': estanteria.ubicaciones.all()
+        'ubicaciones': estanteria.ubicaciones.all().order_by('estanteria__zona', 'estanteria__codigo', 'codigo')
     }
 
     return render(request, 'estanteria_detail.html', context)

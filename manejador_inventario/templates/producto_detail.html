@@ -3,7 +3,13 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-3">Producto {{ producto.codigo }}</h2>
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-3">Producto {{ producto.codigo }}</h2>
+        <a href="{% url 'productosList' %}" class="btn btn-primary">
+            ← Volver
+        </a>
+    </div>
     <p><b>Nombre:</b> {{ producto.nombre }}</p>
     <p><b>Descripción:</b> {{ producto.descripcion }}</p>
     <p><b>Precio Unitario:</b> ${{ producto.precio|intcomma }}</p>
@@ -43,11 +49,5 @@
             Este producto no ha sido ubicado.
         </div>
     {% endif %}
-
-    <div class="mt-4">
-        <a href="{% url 'productosList' %}" class="btn btn-primary">
-            ← Volver
-        </a>
-    </div>
 </div>
 {% endblock %}

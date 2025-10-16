@@ -1,4 +1,5 @@
 from django.db import models
+from manejador_inventario.models import Producto
 
 class Pedido(models.Model):
     """
@@ -71,9 +72,10 @@ class Item(models.Model):
         help_text="Pedido al que pertenece este ítem."
     )
 
-    producto = models.CharField(
-        max_length=100,
-        help_text="Nombre del producto."
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE,
+        help_text="Producto asociado al ítem."
     )
 
     cantidad = models.PositiveIntegerField(

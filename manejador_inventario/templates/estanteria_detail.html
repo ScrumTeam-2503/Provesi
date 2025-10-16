@@ -3,7 +3,14 @@
 
 {% block content %}
 <div class="container">
-    <h2>Estantería {{ estanteria.zona }}-{{ estanteria.codigo }}</h2>
+    
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Estantería {{ estanteria.zona }}-{{ estanteria.codigo }}</h2>
+        <a href="{% url 'bodegaDetail' estanteria.bodega.codigo %}" class="btn btn-primary">
+            ← Volver
+        </a>
+    </div>
     <p><b>Bodega:</b> {{ estanteria.bodega.codigo }}</p>
     <p><b>Niveles:</b> {{ estanteria.niveles }}</p>
     <p><b>Ubicaciones:</b> {{ ubicaciones|length }}</p>
@@ -16,7 +23,7 @@
             type="button" 
             class="btn btn-success"
             onclick="window.location.href='{% url 'addUbicacion' estanteria.bodega.codigo estanteria.zona estanteria.codigo %}'">
-            + Añadir
+            <i class="bi bi-plus-circle"></i> Agregar
         </button>
     </div>
 
@@ -65,9 +72,5 @@
     {% else %}
         <p class="text-muted mt-3">No hay ubicaciones creadas en esta estantería.</p>
     {% endif %}
-
-    <a href="{% url 'bodegaDetail' estanteria.bodega.codigo %}" class="btn btn-primary">
-        ← Volver
-    </a>
 </div>
 {% endblock %}
