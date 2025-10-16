@@ -10,4 +10,7 @@ urlpatterns = [
 
     # Ruta para crear una nueva bodega
     path("bodegas/create/", views.bodega_create, name="bodegaCreate"),
+
+    # Ruta para agregar una estantería a una bodega específica
+    path("bodegas/<int:id_bodega>/addEstanteria/", views.estanteria_create, name="addEstanteria"),
 ]

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Bodega
+from .models import Bodega, Estanteria
 
 class BodegaForm(forms.ModelForm):
     class Meta:
@@ -11,4 +11,16 @@ class BodegaForm(forms.ModelForm):
         labels = {
             'ciudad': 'Ciudad',
             'direccion': 'Dirección',
+        }
+
+class EstanteriaForm(forms.ModelForm):
+    class Meta:
+        model = Estanteria
+        fields = [
+            'zona', 
+            'niveles'
+        ]
+        labels = {
+            'zona': 'Zona',
+            'niveles': 'Niveles',
         }

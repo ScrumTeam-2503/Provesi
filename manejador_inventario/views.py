@@ -3,9 +3,10 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 
-from .forms import BodegaForm
+from .forms import BodegaForm, EstanteriaForm
 
 from .logic.bodega_logic import get_bodegas, get_bodega_by_id, create_bodega
+from .logic.estanteria_logic import create_estanteria
 
 def bodegas_list(request):
     """
@@ -29,7 +30,8 @@ def bodega_detail(request, id_bodega):
     bodega = get_bodega_by_id(id_bodega)
 
     context = {
-        'bodega': bodega
+        'bodega': bodega,
+        'estanterias': bodega.estanterias.all()
     }
 
     return render(request, 'bodega_detail.html', context)
@@ -55,3 +57,28 @@ def bodega_create(request):
     }
 
     return render(request, 'bodega_create.html', context)
+
+def estanteria_create(request, id_bodega):
+    """
+    Vista para agregar una estantería a una bodega específica.
+    
+    Renderiza la plantilla 'estanteria_create.html' con el formulario de creación de estantería.
+    """
+    bodega = get_bodega_by_id(id_bodega)
+
+    if request.method == 'POST':
+        form = EstanteriaForm(request.POST)
+
+        if form.is_valid():
+            estanteria = create_estanteria(form, bodega)
+            messages.add_message(request, messages.SUCCESS, f"Estantería {estanteria.id} creada exitosamente.")
+            return HttpResponseRedirect(reverse('bodegaDetail', args=[bodega.id]))
+    else:
+        form = EstanteriaForm()
+
+    context = {
+        'form': form,
+        'bodega': bodega
+    }
+
+    return render(request, 'estanteria_create.html', context)
