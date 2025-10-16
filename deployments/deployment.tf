@@ -305,10 +305,10 @@ output "manejador_pedidos_public_ips" {
   value       = { for id, instance in aws_instance.manejador-pedidos : id => instance.public_ip }
 }
 
-# Salida. Muestra la dirección IP pública de las instancias de la aplicación de manejador de inventario.
+# Salida. Muestra la dirección IP pública de la instancia de la aplicación de manejador de inventario.
 output "manejador_inventario_public_ip" {
-  description = "Public IP addresses for the manejador-inventario service instances"
-  value       = { for id, instance in aws_instance.manejador-inventario : id => instance.public_ip }
+  description = "Public IP address for the manejador-inventario service instances"
+  value       = aws_instance.manejador-inventario.public_ip
 }
 
 # Salida. Muestra las direcciones IP privadas de las instancias de la aplicación de manejador de pedidos.
@@ -317,10 +317,10 @@ output "manejador_pedidos_private_ips" {
   value       = { for id, instance in aws_instance.manejador-pedidos : id => instance.private_ip }
 }
 
-# Salida. Muestra la dirección IP privada de las instancias de la aplicación de manejador de inventario.
+# Salida. Muestra la dirección IP privada de la instancia de la aplicación de manejador de inventario.
 output "manejador_inventario_private_ip" {
-  description = "Private IP addresses for the manejador-inventario service instances"
-  value       = { for id, instance in aws_instance.manejador-inventario : id => instance.private_ip }
+  description = "Private IP address for the manejador-inventario service instances"
+  value       = aws_instance.manejador-inventario.private_ip
 }
 
 # Salida. Muestra la dirección IP privada de la instancia de la base de datos PostgreSQL.
