@@ -235,6 +235,10 @@ resource "aws_instance" "manejador-pedidos" {
               sudo apt-get update -y
               sudo apt-get install -y python3-pip git build-essential libpq-dev python3-dev
 
+
+              mkdir -p /proyecto
+              cd /proyecto
+
               if [ ! -d ISIS2503-ProvesiApp ]; then
                 git clone ${local.repository}
               fi
@@ -270,6 +274,9 @@ resource "aws_instance" "manejador-inventario" {
 
               sudo apt-get update -y
               sudo apt-get install -y python3-pip git build-essential libpq-dev python3-dev
+
+              mkdir -p /proyecto
+              cd /proyecto
 
               if [ ! -d ISIS2503-ProvesiApp ]; then
                 git clone ${local.repository}
