@@ -1,15 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
+{% load humanize %}
 
 <div class="content">
     <div class="page-header-title d-flex justify-content-between align-items-center">
-        <h4 class="page-title mb-0">Bodegas</h4>
+        <h4 class="page-title mb-0">Productos</h4>
         <button 
             type="button" 
             class="btn btn-success waves-effect waves-light"        
-            onclick="window.location.href='{% url 'bodegaCreate' %}'"
+            onclick="window.location.href='{% url 'productosList' %}'"
         >
-            + Nueva
+            + Nuevo
         </button>
     </div>
 
@@ -21,20 +22,21 @@
                     <thead class="table-light">
                         <tr style="color:#0E2EB0;">
                             <th>Código</th>
-                            <th>Ciudad</th>
-                            <th>Dirección</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for bodega in bodegas_list %}
+                        {% for producto in productos_list %}
                         <tr 
-                            onclick="window.location.href='{% url 'bodegaDetail' bodega.codigo %}'" 
+                            onclick="window.location.href='{% url 'home' %}'" 
                             style="cursor:pointer;"
                             class="table-row-hover"
                         >
-                            <td><b>{{ bodega.codigo }}</b></td>
-                            <td>{{ bodega.ciudad }}</td>
-                            <td>{{ bodega.direccion }}</td>
+                            <td><b>{{ producto.codigo }}</b></td>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.descripcion }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -42,7 +44,7 @@
             {% else %}
                 <div class="text-center text-muted p-4">
                     <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                    No hay bodegas registradas aún.
+                    No hay productos creados aún.
                 </div>
             {% endif %}
 

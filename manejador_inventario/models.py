@@ -65,57 +65,13 @@ class Estanteria(models.Model):
         unique_together = ('bodega', 'zona', 'codigo')
 
     def __str__(self):
-        return f"Estantería {self.zona}{self.codigo} en Bodega {self.bodega.id}"
+        return f"Estantería {self.zona}{self.codigo} en Bodega {self.bodega.codigo}"
     
     def toJson(self):
         return {
             'bodega': self.bodega.toJson(),
             'zona': self.zona,
             'niveles': self.niveles,
-        }
-    
-class Ubicacion(models.Model):
-    """
-    Modelo que representa una ubicación específica dentro de una estantería en el sistema WMS Provesi.
-
-    Contiene información sobre la estantería a la que pertenece, el nivel y la posición dentro del nivel.
-    """
-    estanteria = models.ForeignKey(
-        Estanteria,
-        on_delete=models.CASCADE,
-        related_name='ubicaciones',
-        help_text="Estantería a la que pertenece la ubicación."
-    )
-
-    nivel = models.IntegerField(
-        help_text="Nivel o repisa dentro de la estantería."
-    )
-
-    codigo = models.IntegerField(
-        help_text="Posición específica dentro del nivel de la estantería."
-    )
-
-    capacidad = models.IntegerField(
-        help_text="Capacidad máxima de la ubicación."
-    )
-
-    stock = models.IntegerField(
-        help_text="Cantidad actual de ítems almacenados en la ubicación."
-    )
-
-    class Meta:
-        unique_together = ('estanteria', 'nivel', 'codigo')
-
-    def __str__(self):
-        return f"Ubicación en Estantería {self.estanteria.id} - Nivel {self.nivel} - Posición {self.codigo}"
-    
-    def toJson(self):
-        return {
-            'estanteria': self.estanteria.toJson(),
-            'nivel': self.nivel,
-            'codigo': self.codigo,
-            'capacidad': self.capacidad,
-            'stock': self.stock,
         }
     
 class Producto(models.Model):
@@ -128,13 +84,6 @@ class Producto(models.Model):
         max_length=50,
         primary_key=True,
         help_text="Código único que identifica el producto."
-    )
-
-    ubicacion = models.OneToOneField(
-        Ubicacion,
-        on_delete=models.CASCADE,
-        related_name='producto',
-        help_text="Ubicación donde se encuentra almacenado el producto."
     )
 
     nombre = models.CharField(
@@ -160,4 +109,62 @@ class Producto(models.Model):
             'ubicacion': self.ubicacion.toJson(),
             'descripcion': self.descripcion,
             'cantidad': self.precio,
+        }
+    
+class Ubicacion(models.Model):
+    """
+    Modelo que representa una ubicación específica dentro de una estantería en el sistema WMS Provesi.
+
+    Contiene información sobre la estantería a la que pertenece, el nivel y la posición dentro del nivel.
+    """
+    estanteria = models.ForeignKey(
+        Estanteria,
+        on_delete=models.CASCADE,
+        related_name='ubicaciones',
+        help_text="Estantería a la que pertenece la ubicación."
+    )
+
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE,
+        related_name='ubicacion',
+        null=True,
+        blank=True,
+        help_text="Producto almacenado en la ubicación (si hay alguno)."
+    )
+
+    nivel = models.IntegerField(
+        help_text="Nivel o repisa dentro de la estantería."
+    )
+
+    codigo = models.IntegerField(
+        help_text="Posición específica dentro del nivel de la estantería."
+    )
+
+    capacidad = models.IntegerField(
+        help_text="Capacidad máxima de la ubicación."
+    )
+
+    stock = models.IntegerField(
+        help_text="Cantidad actual de ítems almacenados en la ubicación."
+    )
+
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        help_text="Fecha y hora de la última actualización del stock."
+    )
+
+    class Meta:
+        unique_together = ('estanteria', 'nivel', 'codigo')
+
+    def __str__(self):
+        return f"Ubicación en Estantería {self.estanteria.codigo} - Nivel {self.nivel} - Posición {self.codigo}"
+    
+    def toJson(self):
+        return {
+            'estanteria': self.estanteria.toJson(),
+            'nivel': self.nivel,
+            'codigo': self.codigo,
+            'capacidad': self.capacidad,
+            'stock': self.stock,
         }
