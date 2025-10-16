@@ -4,7 +4,8 @@
 {% block content %}
 
 <div class="container">
-    <h2>Detalle de la Bodega #{{ bodega.id }}</h2>
+    <h2>Detalle de la Bodega</h2>
+    <p><b>Código:</b> {{ bodega.codigo }}</p>
     <p><b>Ciudad:</b> {{ bodega.ciudad }}</p>
     <p><b>Dirección:</b> {{ bodega.direccion }}</p>
 
@@ -15,7 +16,7 @@
         <button 
             type="button" 
             class="btn btn-success waves-effect waves-light"        
-            onclick="window.location.href='{% url 'addEstanteria' bodega.id %}'"
+            onclick="window.location.href='{% url 'addEstanteria' bodega.codigo %}'"
             style="text-align:center;"
         >
         +
@@ -31,8 +32,8 @@
             </thead>
             <tbody>
                 {% for estanteria in estanterias %}
-                <tr>
-                    <td>{{ estanteria.zona }}{{ estanteria.id }}</td>
+                <tr onclick="window.location.href='{% url 'estanteriaDetail' bodega.codigo estanteria.zona estanteria.codigo %}'" style="cursor:pointer;">
+                    <td>{{ estanteria.zona }}-{{ estanteria.codigo }}</td>
                     <td>{{ estanteria.niveles }}</td>
                 </tr>
                 {% endfor %}

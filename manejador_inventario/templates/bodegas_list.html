@@ -30,7 +30,7 @@
                     <table class="table table-hover">
                         <thead>
                         <tr style="color:#0E2EB0">
-                            <th>ID</th>
+                            <th>Código</th>
                             <th>Ciudad</th>
                             <th>Direccion</th>
                         </tr>
@@ -38,8 +38,8 @@
                         <tbody>
 
                         {% for bodega in bodegas_list %}
-                        <tr onclick="window.location.href='{% url 'bodegaDetail' bodega.id %}'" style="cursor:pointer;">
-                            <td>{{ bodega.id }}</td>
+                        <tr onclick="window.location.href='{% url 'bodegaDetail' bodega.codigo %}'" style="cursor:pointer;">
+                            <td>{{ bodega.codigo }}</td>
                             <td>{{ bodega.ciudad }}</td>
                             <td>{{ bodega.direccion }}</td>
                         </tr>

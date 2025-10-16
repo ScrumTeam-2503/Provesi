@@ -7,11 +7,11 @@ def get_bodegas():
     queryset = Bodega.objects.all()
     return (queryset)
 
-def get_bodega_by_id(id_bodega):
+def get_bodega_by_codigo(codigo_bodega):
     """
-    Obtiene una bodega específica por su ID.
+    Obtiene una bodega específica por su código único.
     """
-    bodega = Bodega.objects.get(id=id_bodega)
+    bodega = Bodega.objects.get(codigo=codigo_bodega)
     return bodega
 
 def create_bodega(form):
