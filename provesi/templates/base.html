@@ -13,28 +13,33 @@
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <nav class="navbar navbar-light bg-light">
-        <a class="ms-4 navbar-brand" href="/">
+      <div class="container-fluid">
+        <!-- Logo -->
+        <a class="navbar-brand" href="/">
           <img src="{% static 'media/logo-uniandes.png' %}" width="45" height="45" alt="" />
+          WMS Provesi
         </a>
-      </nav>
 
-      <nav class="navbar navbar-light bg-light">
-        <a class="me-4 navbar-brand" href="/"> WMS Provesi </a>
-      </nav>
+        <!-- Botón hamburguesa para móviles -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" 
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'bodegasList' %}">Bodegas</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'pedidosList' %}">Pedidos</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'productosList' %}">Productos</a>
-          </li>
-        </ul>
+        <!-- Menú colapsable -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'bodegasList' %}">Bodegas</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'pedidosList' %}">Pedidos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'productosList' %}">Productos</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </nav>
 

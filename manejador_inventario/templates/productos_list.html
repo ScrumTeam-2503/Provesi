@@ -10,7 +10,7 @@
             class="btn btn-success waves-effect waves-light"        
             onclick="window.location.href='{% url 'productoCreate' %}'"
         >
-            + Nuevo
+             <i class="bi bi-plus-circle"></i> Nuevo
         </button>
     </div>
 
@@ -23,7 +23,6 @@
                         <tr style="color:#0E2EB0;">
                             <th>Código</th>
                             <th>Nombre</th>
-                            <th>Descripción</th>
                             <th>Precio Unitario</th>
                         </tr>
                     </thead>
@@ -36,7 +35,6 @@
                         >
                             <td><b>{{ producto.codigo }}</b></td>
                             <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.descripcion }}</td>
                             <td>$ {{ producto.precio|intcomma }}</td>
                         </tr>
                         {% endfor %}

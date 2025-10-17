@@ -14,7 +14,7 @@
     <!-- Información del pedido -->
     <p><b>Estado:</b> {{ pedido.estado }}</p>
     <p><b>Método de pago:</b> {{ pedido.metodo_pago }}</p>
-    <p><b>Fecha de creación:</b> {{ pedido.fecha_creacion|naturaltime }}</p>
+    <p><b>Fecha de creación:</b> {{ pedido.fecha_creacion }}</p>
     <p><b>Última actualización:</b> {{ pedido.fecha_actualizacion|naturaltime }}</p>
 
     <!-- Items -->
@@ -32,7 +32,6 @@
                     <tr class="text-center">
                         <th>Código</th>
                         <th>Nombre</th>
-                        <th>Descripción</th>
                         <th>Precio</th>
                         <th>Cantidad</th>
                         <th>Acciones</th>
@@ -43,7 +42,6 @@
                     <tr>
                         <td class="text-center">{{ item.producto.codigo }}</td>
                         <td>{{ item.producto.nombre }}</td>
-                        <td>{{ item.producto.descripcion }}</td>
                         <td class="text-end">$ {{ item.producto.precio|intcomma }}</td>
                         <td class="text-center">{{ item.cantidad }}</td>
                         <td class="text-center">
