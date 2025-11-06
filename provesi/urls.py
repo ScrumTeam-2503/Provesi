@@ -24,6 +24,9 @@ urlpatterns = [
     # Urls for home page
     path('', views.index, name='home'),
 
+    # Health check endpoint
+    path('health/', views.health_check, name='health'),
+
     # Urls for manejador_pedidos app
     path('manejador_pedidos/', include('manejador_pedidos.urls')),
 

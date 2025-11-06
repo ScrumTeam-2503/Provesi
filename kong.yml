@@ -29,9 +29,46 @@ upstreams:
         weight: 100
       - target: <ip-privada-manejador-pedidos-b>:8080
         weight: 100
+      - target: <ip-privada-manejador-pedidos-c>:8080
+        weight: 100
+
+    healthchecks:
+      threshold: 50
+      active:
+        http_path: /health/
+        timeout: 3
+        healthy:
+          successes: 2
+          interval: 5
+        unhealthy:
+          tcp_failures: 2
+          interval: 5
 
   - name: manejador_inventario_upstream
     targets:
-      - target: <ip-privada-manejador-inventario>:8080
+      - target: <ip-privada-manejador-inventario-a>:8080
+        weight: 100
+      - target: <ip-privada-manejador-inventario-b>:8080
         weight: 100
 
+    healthchecks:
+      threshold: 50
+      active:
+        http_path: /health/
+        timeout: 3
+        healthy:
+          successes: 2
+          interval: 5
+        unhealthy:
+          tcp_failures: 2
+          interval: 5
+
+plugins:
+  - name: response-transformer
+    config:
+      add:
+        json:
+          message: "Servicio temporalmente no disponible, por favor intenta más tarde."
+          status: "degradado"
+      remove:
+        headers: ["Server", "Via"]

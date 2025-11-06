@@ -217,10 +217,10 @@ resource "aws_instance" "database" {
 }
 
 # Recurso. Define las instancias EC2 para el manejador de pedidos de la aplicación de Provesi.
-# Se crean dos instancias (a y b) usando un bucle.
+# Se crean tres instancias (a, b y c) usando un bucle.
 # Cada instancia incluye un script de creación para instalar la aplicación de Provesi.
 resource "aws_instance" "manejador-pedidos" {
-  for_each = toset(["a", "b"])
+  for_each = toset(["a", "b", "c"])
 
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
@@ -257,9 +257,12 @@ resource "aws_instance" "manejador-pedidos" {
   depends_on = [aws_instance.database]
 }
 
-# Recurso. Define la instancia EC2 para la aplicación de manejador de inventario.
-# Esta instancia incluye un script de creación para instalar la aplicación de Provesi y aplicar las migraciones.
+# Recurso. Define las instancias EC2 para el manejador de inventario de la aplicación de Provesi.
+# Se crean dos instancias (a y b) usando un bucle.
+# Cada instancia incluye un script de creación para instalar la aplicación de Provesi.
 resource "aws_instance" "manejador-inventario" {
+  for_each = toset(["a", "b"])
+
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   associate_public_ip_address = true
@@ -292,7 +295,7 @@ resource "aws_instance" "manejador-inventario" {
               EOT
 
   tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-manejador-inventario"
+    Name = "${var.project_prefix}-manejador-inventario-${each.key}"
     Role = "manejador-inventario"
   })
 
