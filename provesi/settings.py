@@ -85,8 +85,8 @@ DATABASES = {
         'NAME': 'provesi_db',
         'USER': 'provesi_user',
         'PASSWORD': 'scrumteam',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+        'PORT': '',
     }
 }
 
