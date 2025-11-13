@@ -20,9 +20,11 @@
     <!-- Items -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Items del pedido</h3>
-        <a href="{% url 'addItem' pedido.id %}" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> Agregar
-        </a>
+        {% if is_admin %}
+            <a href="{% url 'addItem' pedido.id %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Agregar
+            </a>
+        {% endif %}
     </div>
 
     {% if items %}
@@ -45,12 +47,14 @@
                         <td class="text-end">$ {{ item.producto.precio|intcomma }}</td>
                         <td class="text-center">{{ item.cantidad }}</td>
                         <td class="text-center">
-                            <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="{% url 'home' %}" class="btn btn-outline-danger btn-sm">
-                                <i class="bi bi-trash"></i>
-                            </a>
+                            {% if is_admin %}
+                                <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'home' %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

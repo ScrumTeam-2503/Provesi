@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'manejador_pedidos',
     'manejador_inventario',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -68,6 +69,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
+                'provesi.context_processors.auth_info',
             ],
         },
     },
@@ -85,7 +89,7 @@ DATABASES = {
         'NAME': 'provesi_db',
         'USER': 'provesi_user',
         'PASSWORD': 'scrumteam',
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+        'HOST': os.getenv('DATABASE_HOST', '54.242.122.190'),
         'PORT': '',
     }
 }
@@ -136,4 +140,23 @@ MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'static', 'media')
 # Extra places for collectstatic to find static files.
 STATICFILES_DIRS = (
     os.path.join(PROJECT_ROOT, 'static'),
+)
+
+
+LOGIN_URL = "/login/auth0"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+SOCIAL_AUTH_TRAILING_SLASH = False # Remove end slash from routes
+SOCIAL_AUTH_AUTH0_DOMAIN = 'dev-q7qkiq2lfwk64fcv.us.auth0.com'
+SOCIAL_AUTH_AUTH0_KEY = 'TK5uVwhkbcLV2jrUkiogvfTqC4BbSqMM'
+SOCIAL_AUTH_AUTH0_SECRET = '7xxrCgTjQ-3THYaapKyIEZ9oCFYiYupEoPq0iO6JDOIlHw4DE3xGUWtccwNwXtHi'
+SOCIAL_AUTH_AUTH0_SCOPE = [
+ 'openid',
+ 'profile',
+ 'email',
+ 'role',
+]
+AUTHENTICATION_BACKENDS = (
+ 'provesi.auth0backend.Auth0',
+ 'django.contrib.auth.backends.ModelBackend',
 )

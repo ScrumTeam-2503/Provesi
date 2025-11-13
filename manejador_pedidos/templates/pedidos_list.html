@@ -4,13 +4,15 @@
 <div class="content">
     <div class="page-header-title d-flex justify-content-between align-items-center">
         <h4 class="page-title mb-0">Pedidos</h4>
-        <button 
-            type="button" 
-            class="btn btn-success waves-effect waves-light"        
-            onclick="window.location.href='{% url 'pedidoCreate' %}'"
-        >
-            + Nuevo
-        </button>
+        {% if is_admin %}
+            <button 
+                type="button" 
+                class="btn btn-success waves-effect waves-light"        
+                onclick="window.location.href='{% url 'pedidoCreate' %}'"
+            >
+                + Nuevo
+            </button>
+        {% endif %}
     </div>
 
     <div class="page-content-wrapper mt-4">
