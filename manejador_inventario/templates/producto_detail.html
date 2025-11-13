@@ -34,11 +34,13 @@
                             <p class="mb-1"><b>Capacidad:</b> {{ ubicacion.capacidad }}</p>
                             <p class="mb-1"><b>Stock:</b> {{ ubicacion.stock }}</p>
                             <p class="mb-2"><b>Última actualización:</b> {{ ubicacion.fecha_actualizacion|naturaltime }}</p>
-                            <div class="text-end">
-                                <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm">
-                                    Modificar
-                                </a>
-                            </div>
+                            {% if is_admin %}
+                                <div class="text-end">
+                                    <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm">
+                                        Modificar
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

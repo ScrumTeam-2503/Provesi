@@ -1,53 +1,56 @@
+"""
+Vistas para el módulo de gestión de pedidos.
+Maneja pedidos e ítems de pedido.
+"""
 from django.shortcuts import render
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.contrib.auth.decorators import login_required
 
+from provesi.decorators import admin_required
 from .forms import PedidoForm, ItemForm
-
 from .logic.pedido_logic import get_pedidos, get_pedido_by_id, create_pedido
 from .logic.item_logic import create_item
 
+
+# ============================================================================
+# VISTAS DE LECTURA (Solo requieren login)
+# ============================================================================
+
+@login_required
 def pedidos_list(request):
-    """
-    Vista para listar todos los pedidos.
-    
-    Renderiza la plantilla 'pedidos_list.html' con el contexto de pedidos.
-    """
+    """Lista todos los pedidos del sistema."""
     pedidos = get_pedidos()
     context = {
         'pedidos_list': pedidos
     }
-
     return render(request, 'pedidos_list.html', context)
 
-def pedido_detail(request, pedido_id):
-    """
-    Vista para mostrar los detalles de un pedido específico.
-    
-    Renderiza la plantilla 'pedidos_detail.html' con el contexto del pedido.
-    """
-    pedido = get_pedido_by_id(pedido_id)
 
+@login_required
+def pedido_detail(request, pedido_id):
+    """Muestra detalles de un pedido específico y sus ítems."""
+    pedido = get_pedido_by_id(pedido_id)
     context = {
         'pedido': pedido,
         'items': pedido.items.all()
     }
-
     return render(request, 'pedido_detail.html', context)
 
+
+# ============================================================================
+# VISTAS DE CREACIÓN (Requieren rol de administrador)
+# ============================================================================
+
+@admin_required
 def pedido_create(request):
-    """
-    Vista para crear un nuevo pedido.
-    
-    Renderiza la plantilla 'pedido_create.html' con el formulario de creación de pedido.
-    """
+    """Crea un nuevo pedido. Solo administradores."""
     if request.method == 'POST':
         form = PedidoForm(request.POST)
-
         if form.is_valid():
             pedido = create_pedido(form)
-            messages.add_message(request, messages.SUCCESS, f"Pedido {pedido.id} creado exitosamente.")
+            messages.success(request, f"Pedido {pedido.id} creado exitosamente.")
             return HttpResponseRedirect(reverse('pedidosList'))
     else:
         form = PedidoForm()
@@ -58,23 +61,19 @@ def pedido_create(request):
         'accion': 'Guardar Pedido',
         'cancel_url': reverse('pedidosList')
     }
-
     return render(request, 'create_form.html', context)
 
+
+@admin_required
 def item_create(request, pedido_id):
-    """
-    Vista para agregar un ítem a un pedido específico.
-    
-    Renderiza la plantilla 'item_create.html' con el formulario de creación de ítem.
-    """
+    """Agrega un ítem a un pedido existente. Solo administradores."""
     pedido = get_pedido_by_id(pedido_id)
 
     if request.method == 'POST':
         form = ItemForm(request.POST)
-
         if form.is_valid():
             item = create_item(form, pedido)
-            messages.add_message(request, messages.SUCCESS, f"Ítem {item.producto} agregado exitosamente.")
+            messages.success(request, f"Ítem {item.producto} agregado exitosamente.")
             return HttpResponseRedirect(reverse('pedidoDetail', args=[pedido.id]))
     else:
         form = ItemForm()
@@ -86,5 +85,4 @@ def item_create(request, pedido_id):
         'accion': 'Guardar Item',
         'cancel_url': reverse('pedidoDetail', args=[pedido.id])
     }
-
     return render(request, 'create_form.html', context)

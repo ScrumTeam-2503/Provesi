@@ -5,13 +5,15 @@
 <div class="content">
     <div class="page-header-title d-flex justify-content-between align-items-center">
         <h4 class="page-title mb-0">Productos</h4>
-        <button 
-            type="button" 
-            class="btn btn-success waves-effect waves-light"        
-            onclick="window.location.href='{% url 'productoCreate' %}'"
-        >
-             <i class="bi bi-plus-circle"></i> Nuevo
-        </button>
+        {% if is_admin %}
+            <button 
+                type="button" 
+                class="btn btn-success waves-effect waves-light"        
+                onclick="window.location.href='{% url 'productoCreate' %}'"
+            >
+                 <i class="bi bi-plus-circle"></i> Nuevo
+            </button>
+        {% endif %}
     </div>
 
     <div class="page-content-wrapper mt-4">

@@ -23,6 +23,7 @@ urlpatterns = [
 
     # Urls for home page
     path('', views.index, name='home'),
+    path('logout/', views.logout, name='auth0_logout'),
 
     # Health check endpoint
     path('health/', views.health_check, name='health'),
@@ -32,4 +33,9 @@ urlpatterns = [
 
     # Urls for manejador_inventario app
     path('manejador_inventario/', include('manejador_inventario.urls')),
+
+    path(r'', include('django.contrib.auth.urls')),
+    path(r'', include('social_django.urls')),
+
+    
 ]
