@@ -5,7 +5,7 @@ services:
     name: manejador_pedidos_service
     protocol: http
     routes:
-      
+
       - name: manejador_pedidos
         paths:
           - /
@@ -16,20 +16,20 @@ services:
     name: manejador_inventario_service
     protocol: http
     routes:
-      
+
       - name: manejador_inventario
         paths:
           - /manejador_inventario
         strip_path: false
-    
+
 upstreams:
   - name: manejador_pedidos_upstream
     targets:
-      - target: <ip-privada-manejador-pedidos-a>:8080
+      - target: <manejador_pedidos_a>:8080
         weight: 100
-      - target: <ip-privada-manejador-pedidos-b>:8080
+      - target: <manejador_pedidos_b>:8080
         weight: 100
-      - target: <ip-privada-manejador-pedidos-c>:8080
+      - target: <manejador_pedidos_c>:8080
         weight: 100
 
     healthchecks:
@@ -46,9 +46,9 @@ upstreams:
 
   - name: manejador_inventario_upstream
     targets:
-      - target: <ip-privada-manejador-inventario-a>:8080
+      - target: <manejador_inventario_a>:8080
         weight: 100
-      - target: <ip-privada-manejador-inventario-b>:8080
+      - target: <manejador_inventario_b>:8080
         weight: 100
 
     healthchecks:
@@ -68,7 +68,9 @@ plugins:
     config:
       add:
         json:
-          message: "Servicio temporalmente no disponible, por favor intenta más tarde."
-          status: "degradado"
+          - 'message:"Servicio temporalmente no disponible, por favor intenta más tarde."'
+          - 'status:"degradado"'
       remove:
-        headers: ["Server", "Via"]
+        headers:
+          - Server
+          - Via
