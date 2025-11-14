@@ -21,76 +21,76 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!g1-q*d^6%qi1o=_aek#r#%+oa*94@lexdzu51d6r*_4$34_qz'
+SECRET_KEY = "django-insecure-!g1-q*d^6%qi1o=_aek#r#%+oa*94@lexdzu51d6r*_4$34_qz"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.humanize',
-    'bootstrap5',
-    'widget_tweaks',
-    'manejador_pedidos',
-    'manejador_inventario',
-    'social_django',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.humanize",
+    "bootstrap5",
+    "widget_tweaks",
+    "manejador_pedidos",
+    "manejador_inventario",
+    "social_django",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
     #'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'provesi.urls'
+ROOT_URLCONF = "provesi.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'provesi', 'templates')],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'social_django.context_processors.backends',
-                'social_django.context_processors.login_redirect',
-                'provesi.context_processors.auth_info',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(BASE_DIR, "provesi", "templates")],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "social_django.context_processors.backends",
+                "social_django.context_processors.login_redirect",
+                "provesi.context_processors.auth_info",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'provesi.wsgi.application'
+WSGI_APPLICATION = "provesi.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'provesi_db',
-        'USER': 'provesi_user',
-        'PASSWORD': 'scrumteam',
-        'HOST': os.getenv('DATABASE_HOST', '204.236.193.196'),
-        'PORT': '',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "provesi_db",
+        "USER": "provesi_user",
+        "PASSWORD": "scrumteam",
+        "HOST": os.getenv("DATABASE_HOST", "44.222.253.33"),
+        "PORT": "",
     }
 }
 
@@ -100,16 +100,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -117,9 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
-LANGUAGE_CODE = 'es-co'
+LANGUAGE_CODE = "es-co"
 
-TIME_ZONE = 'America/Bogota'
+TIME_ZONE = "America/Bogota"
 
 USE_I18N = True
 
@@ -132,31 +132,32 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
-STATIC_URL = '/static/'
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'static', 'media')
-#MEDIA_URL = '/static/media/'
+STATIC_ROOT = os.path.join(PROJECT_ROOT, "staticfiles")
+STATIC_URL = "/static/"
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, "static", "media")
+# MEDIA_URL = '/static/media/'
 
 # Extra places for collectstatic to find static files.
-STATICFILES_DIRS = (
-    os.path.join(PROJECT_ROOT, 'static'),
-)
+STATICFILES_DIRS = (os.path.join(PROJECT_ROOT, "static"),)
 
 
 LOGIN_URL = "/login/auth0"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
-SOCIAL_AUTH_TRAILING_SLASH = False # Remove end slash from routes
-SOCIAL_AUTH_AUTH0_DOMAIN = 'dev-q7qkiq2lfwk64fcv.us.auth0.com'
-SOCIAL_AUTH_AUTH0_KEY = 'TK5uVwhkbcLV2jrUkiogvfTqC4BbSqMM'
-SOCIAL_AUTH_AUTH0_SECRET = '7xxrCgTjQ-3THYaapKyIEZ9oCFYiYupEoPq0iO6JDOIlHw4DE3xGUWtccwNwXtHi'
+SOCIAL_AUTH_TRAILING_SLASH = False  # Remove end slash from routes
+SOCIAL_AUTH_AUTH0_DOMAIN = "dev-q7qkiq2lfwk64fcv.us.auth0.com"
+SOCIAL_AUTH_AUTH0_KEY = "TK5uVwhkbcLV2jrUkiogvfTqC4BbSqMM"
+SOCIAL_AUTH_AUTH0_SECRET = (
+    "7xxrCgTjQ-3THYaapKyIEZ9oCFYiYupEoPq0iO6JDOIlHw4DE3xGUWtccwNwXtHi"
+)
 SOCIAL_AUTH_AUTH0_SCOPE = [
- 'openid',
- 'profile',
- 'email',
- 'role',
+    "openid",
+    "profile",
+    "email",
+    "role",
 ]
 AUTHENTICATION_BACKENDS = (
- 'provesi.auth0backend.Auth0',
- 'django.contrib.auth.backends.ModelBackend',
+    "provesi.auth0backend.Auth0",
+    "django.contrib.auth.backends.ModelBackend",
 )
+
