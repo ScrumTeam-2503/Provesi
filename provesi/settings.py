@@ -89,7 +89,7 @@ DATABASES = {
         "NAME": "provesi_db",
         "USER": "provesi_user",
         "PASSWORD": "scrumteam",
-        "HOST": os.getenv("DATABASE_HOST", "44.222.253.33"),
+        "HOST": os.getenv("DATABASE_HOST", "34.229.88.183"),
         "PORT": "",
     }
 }
@@ -160,4 +160,3 @@ AUTHENTICATION_BACKENDS = (
     "provesi.auth0backend.Auth0",
     "django.contrib.auth.backends.ModelBackend",
 )
-
