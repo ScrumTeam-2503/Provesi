@@ -4,8 +4,8 @@ services:
   - host: manejador_pedidos_upstream
     name: manejador_pedidos_service
     protocol: http
+    preserve_host: true
     routes:
-
       - name: manejador_pedidos
         paths:
           - /
@@ -15,8 +15,8 @@ services:
   - host: manejador_inventario_upstream
     name: manejador_inventario_service
     protocol: http
+    preserve_host: true
     routes:
-
       - name: manejador_inventario
         paths:
           - /manejador_inventario
