@@ -25,11 +25,11 @@ services:
 upstreams:
   - name: manejador_pedidos_upstream
     targets:
-      - target: <manejador_pedidos_a>:8080
+      - target: <PEDIDOS_A_HOST>:8080
         weight: 100
-      - target: <manejador_pedidos_b>:8080
+      - target: <PEDIDOS_B_HOST>:8080
         weight: 100
-      - target: <manejador_pedidos_c>:8080
+      - target: <PEDIDOS_C_HOST>:8080
         weight: 100
 
     healthchecks:
@@ -46,9 +46,9 @@ upstreams:
 
   - name: manejador_inventario_upstream
     targets:
-      - target: <manejador_inventario_a>:8080
+      - target: <INVENTARIO_A_HOST>:8080
         weight: 100
-      - target: <manejador_inventario_b>:8080
+      - target: <INVENTARIO_B_HOST>:8080
         weight: 100
 
     healthchecks:
