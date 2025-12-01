@@ -19,14 +19,6 @@
 #    - provesi-manejador-inventario (Provesi app instalada)
 # ******************************************************************
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "6.18.0"
-    }
-  }
-}
 
 # Variable. Define la región de AWS donde se desplegará la infraestructura.
 variable "region" {
