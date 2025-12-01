@@ -198,7 +198,7 @@ resource "aws_instance" "kong" {
               sudo sed -i "s/<INVENTARIO_A_HOST>/${aws_instance.manejador-inventario["a"].private_ip}/g" kong.yaml
               sudo sed -i "s/<INVENTARIO_B_HOST>/${aws_instance.manejador-inventario["b"].private_ip}/g" kong.yaml
 
-              docekr network create kong-network
+              docker network create kong-network
               docker run -d --name kong --network=kong-net --restart=always \
                 -v "$(pwd):/kong/declarative/" -e "Kong_DATABASE=off" \
                 -e "Kong_DECLARATIVE_CONFIG=/kong/declarative/kong.yaml" \
