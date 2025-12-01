@@ -19,6 +19,15 @@
 #    - provesi-manejador-inventario (Provesi app instalada)
 # ******************************************************************
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.18.0"
+    }
+  }
+}
+
 # Variable. Define la región de AWS donde se desplegará la infraestructura.
 variable "region" {
   description = "AWS region for deployment"
@@ -163,22 +172,45 @@ resource "aws_instance" "kong" {
 
   user_data = <<-EOT
               #!/bin/bash
-              sudo apt-get update -y
 
-              sudo apt-get install -y ca-certificates curl gnupg lsb-release
+              sudo export PEDIDOS_A_HOST=${aws_instance.manejador-pedidos["a"].private_ip}
+              sudo export PEDIDOS_B_HOST=${aws_instance.manejador-pedidos["b"].private_ip}
+              sudo export PEDIDOS_C_HOST=${aws_instance.manejador-pedidos["c"].private_ip}
 
-              sudo mkdir -m 0755 -p /etc/apt/keyrings
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              sudo export INVENTARIO_A_HOST=${aws_instance.manejador-inventario["a"].private_ip}
+              sudo export INVENTARIO_B_HOST=${aws_instance.manejador-inventario["b"].private_ip}
 
-              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              echo "PEDIDOS_A_HOST=${aws_instance.manejador-pedidos["a"].private_ip}" | sudo tee -a /etc/environment
+              echo "PEDIDOS_B_HOST=${aws_instance.manejador-pedidos["b"].private_ip}" | sudo tee -a /etc/environment
+              echo "PEDIDOS_C_HOST=${aws_instance.manejador-pedidos["c"].private_ip}" | sudo tee -a /etc/environment
 
-              sudo apt-get update -y
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              echo "INVENTARIO_A_HOST=${aws_instance.manejador-inventario["a"].private_ip}" | sudo tee -a /etc/environment
+              echo "INVENTARIO_B_HOST=${aws_instance.manejador-inventario["b"].private_ip}" | sudo tee -a /etc/environment
 
-              sudo usermod -aG docker ubuntu
+              sudo dnf install nano git -y
+              sudo mkdir -p /proyecto
+              cd /proyecto
 
-              sudo systemctl enable docker
-              sudo systemctl start docker
+              if [ ! -d ISIS2503-ProvesiApp ]; then
+                git clone ${local.repository} ISIS2503-ProvesiApp 
+              fi
+
+              cd ISIS2503-ProvesiApp
+              git fetch origin ${local.branch}
+              git checkout ${local.branch}
+
+              sudo sed -i "s/<PEDIDOS_A_HOST>/${aws_instance.manejador-pedidos["a"].private_ip}/g" kong.yaml
+              sudo sed -i "s/<PEDIDOS_B_HOST>/${aws_instance.manejador-pedidos["b"].private_ip}/g" kong.yaml
+              sudo sed -i "s/<PEDIDOS_C_HOST>/${aws_instance.manejador-pedidos["c"].private_ip}/g" kong.yaml
+
+              sudo sed -i "s/<INVENTARIO_A_HOST>/${aws_instance.manejador-inventario["a"].private_ip}/g" kong.yaml
+              sudo sed -i "s/<INVENTARIO_B_HOST>/${aws_instance.manejador-inventario["b"].private_ip}/g" kong.yaml
+
+              docekr network create kong-network
+              docker run -d --name kong --network=kong-net --restart=always \
+                -v "$(pwd):/kong/declarative/" -e "Kong_DATABASE=off" \
+                -e "Kong_DECLARATIVE_CONFIG=/kong/declarative/kong.yaml" \
+                -p 8000:8000 kong/kong-gateway
               EOT
 
   tags = merge(local.common_tags, {
@@ -191,23 +223,15 @@ resource "aws_instance" "kong" {
 # Esta instancia incluye un script de creación para instalar y configurar PostgreSQL.
 # El script crea un usuario y una base de datos, y ajusta la configuración para permitir conexiones remotas.
 resource "aws_instance" "database" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-051685736c7b35f95"
   instance_type               = var.instance_type
-  associate_public_ip_address = false
+  associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.traffic_db.id, aws_security_group.traffic_ssh.id]
 
   user_data = <<-EOT
               #!/bin/bash
 
-              sudo apt-get update -y
-              sudo apt-get install -y postgresql postgresql-contrib
-
-              sudo -u postgres psql -c "CREATE USER provesi_user WITH PASSWORD 'scrumteam';"
-              sudo -u postgres createdb -O provesi_user provesi_db
-              echo "host all all 0.0.0.0/0 trust" | sudo tee -a /etc/postgresql/16/main/pg_hba.conf
-              echo "listen_addresses='*'" | sudo tee -a /etc/postgresql/16/main/postgresql.conf
-              echo "max_connections=2000" | sudo tee -a /etc/postgresql/16/main/postgresql.conf
-              sudo service postgresql restart
+              docker run --restart=always -d -e POSTGRES_USER=provesi_user -e POSTGRES_DB=provesi_db -e POSTGRES_PASSWORD=scrumteam -p 5432:5432 --name provesi-db postgres
               EOT
 
   tags = merge(local.common_tags, {
@@ -247,6 +271,9 @@ resource "aws_instance" "manejador-pedidos" {
               git checkout ${local.branch}
               sudo pip3 install --upgrade pip --break-system-packages
               sudo pip3 install -r requirements.txt --break-system-packages
+
+              sudo python3 manage.py makemigrations
+              sudo python3 manage.py migrate
               EOT
 
   tags = merge(local.common_tags, {
