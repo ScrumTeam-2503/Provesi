@@ -134,10 +134,10 @@ resource "aws_security_group" "traffic_ssh" {
   })
 }
 
-# ---------- EC2 - Kong API Gateway ----------
+# ---------- EC2 - Kong API Gateway - Load Balancer - Circuit Breaker ----------
 
 resource "aws_instance" "kong" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-051685736c7b35f95"
   instance_type               = var.instance_type
   associate_public_ip_address = true
   vpc_security_group_ids      = [
@@ -148,19 +148,12 @@ resource "aws_instance" "kong" {
   user_data = <<-EOT
     #!/bin/bash
 
-    apt-get update -y
-    apt-get install -y nano git docker.io
+    sudo dnf install nano git -y
 
-    mkdir -p /proyecto
+    sudo mkdir -p /proyecto
     cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository}
-    fi
-
+    sudo git clone ${local.repository}
     cd Provesi
-    git fetch origin ${local.branch}
-    git checkout ${local.branch}
 
     # Insert IPs into kong.yaml
     sed -i "s/<PEDIDOS_A_HOST>/${aws_instance.manejador_pedidos["a"].private_ip}/g" kong.yml
@@ -182,6 +175,11 @@ resource "aws_instance" "kong" {
     Name = "${var.project_prefix}-kong",
     Role = "provesi-kong"
   })
+
+  depends_on = [
+    aws_instance.manejador_pedidos,
+    aws_instance.manejador_inventario
+  ]
 }
 
 # ---------- EC2 - PostgreSQL DB ----------
@@ -218,7 +216,7 @@ resource "aws_instance" "database" {
 resource "aws_instance" "manejador_pedidos" {
   for_each = toset(["a", "b", "c"])
 
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-051685736c7b35f95"
   instance_type               = var.instance_type
   associate_public_ip_address = true
   vpc_security_group_ids      = [
@@ -232,8 +230,7 @@ resource "aws_instance" "manejador_pedidos" {
     export DATABASE_HOST=${aws_instance.database.private_ip}
     echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
 
-    apt-get update -y
-    apt-get install -y python3-pip git build-essential libpq-dev python3-dev
+    sudo dnf install nano git -y
 
     mkdir -p /proyecto
     cd /proyecto
@@ -243,14 +240,10 @@ resource "aws_instance" "manejador_pedidos" {
     fi
 
     cd Provesi
-    git fetch origin ${local.branch}
-    git checkout ${local.branch}
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
 
-    pip3 install --upgrade pip
-    pip3 install -r requirements.txt
-
-    python3 manage.py makemigrations
-    python3 manage.py migrate
+    docker build -t manejador-pedidos-app .
+    docker run --name pedidos -it --rm -p 8080:8080 manejador-pedidos-app
   EOT
 
   tags = merge(local.common_tags, {
@@ -266,7 +259,7 @@ resource "aws_instance" "manejador_pedidos" {
 resource "aws_instance" "manejador_inventario" {
   for_each = toset(["a", "b"])
 
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-051685736c7b35f95"
   instance_type               = var.instance_type
   associate_public_ip_address = true
   vpc_security_group_ids      = [
@@ -280,8 +273,7 @@ resource "aws_instance" "manejador_inventario" {
     export DATABASE_HOST=${aws_instance.database.private_ip}
     echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
 
-    apt-get update -y
-    apt-get install -y python3-pip git build-essential libpq-dev python3-dev
+    sudo dnf install nano git -y
 
     mkdir -p /proyecto
     cd /proyecto
@@ -291,14 +283,10 @@ resource "aws_instance" "manejador_inventario" {
     fi
 
     cd Provesi
-    git fetch origin ${local.branch}
-    git checkout ${local.branch}
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
 
-    pip3 install --upgrade pip
-    pip3 install -r requirements.txt
-
-    python3 manage.py makemigrations
-    python3 manage.py migrate
+    docker build -t manejador-inventario-app .
+    docker run --name inventario -it --rm -p 8080:8080 manejador-inventario-app
   EOT
 
   tags = merge(local.common_tags, {
