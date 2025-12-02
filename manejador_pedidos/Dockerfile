@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
-COPY .. /app
+COPY . /app
 
 ENV DATABASE_HOST=<DATABASE_HOST>
 
@@ -10,4 +10,4 @@ RUN apt-get update \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["sh", "init.sh"]
+ENTRYPOINT ["sh", "manejador_pedidos/init.sh"]
