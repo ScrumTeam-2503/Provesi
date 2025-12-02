@@ -250,7 +250,7 @@ resource "aws_instance" "manejador_pedidos" {
       -f manejador_pedidos/Dockerfile \
       .
 
-    docker run -d --name pedidos -p 8080:8080 manejador-pedidos-app
+    docker run -d --name pedidos --restart=always -p 8080:8080 manejador-pedidos-app
   EOT
 
   tags = merge(local.common_tags, {
@@ -300,7 +300,7 @@ resource "aws_instance" "manejador_inventario" {
       -f manejador_inventario/Dockerfile \
       .
 
-    docker run -d --name inventario -p 8080:8080 manejador-inventario-app
+    docker run -d --name inventario --restart=always -p 8080:8080 manejador-inventario-app
   EOT
 
   tags = merge(local.common_tags, {
