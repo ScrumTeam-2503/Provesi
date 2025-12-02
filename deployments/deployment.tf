@@ -163,18 +163,18 @@ resource "aws_instance" "kong" {
     git checkout ${local.branch}
 
     # Insert IPs into kong.yaml
-    sed -i "s/<PEDIDOS_A_HOST>/${aws_instance.manejador_pedidos["a"].private_ip}/g" kong.yaml
-    sed -i "s/<PEDIDOS_B_HOST>/${aws_instance.manejador_pedidos["b"].private_ip}/g" kong.yaml
-    sed -i "s/<PEDIDOS_C_HOST>/${aws_instance.manejador_pedidos["c"].private_ip}/g" kong.yaml
+    sed -i "s/<PEDIDOS_A_HOST>/${aws_instance.manejador_pedidos["a"].private_ip}/g" kong.yml
+    sed -i "s/<PEDIDOS_B_HOST>/${aws_instance.manejador_pedidos["b"].private_ip}/g" kong.yml
+    sed -i "s/<PEDIDOS_C_HOST>/${aws_instance.manejador_pedidos["c"].private_ip}/g" kong.yml
 
-    sed -i "s/<INVENTARIO_A_HOST>/${aws_instance.manejador_inventario["a"].private_ip}/g" kong.yaml
-    sed -i "s/<INVENTARIO_B_HOST>/${aws_instance.manejador_inventario["b"].private_ip}/g" kong.yaml
+    sed -i "s/<INVENTARIO_A_HOST>/${aws_instance.manejador_inventario["a"].private_ip}/g" kong.yml
+    sed -i "s/<INVENTARIO_B_HOST>/${aws_instance.manejador_inventario["b"].private_ip}/g" kong.yml
 
     docker network create kong-network
     docker run -d --name kong --network=kong-network --restart=always \
       -v "$(pwd):/kong/declarative/" \
       -e "KONG_DATABASE=off" \
-      -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yaml" \
+      -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
       -p 8000:8000 kong/kong-gateway
   EOT
 
