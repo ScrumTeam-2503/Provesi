@@ -10,4 +10,4 @@ RUN apt-get update \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["sh", "manejador_pedidos/init.sh"]
+ENTRYPOINT ["sh", "init.sh"]
