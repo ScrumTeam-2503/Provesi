@@ -230,19 +230,26 @@ resource "aws_instance" "manejador_pedidos" {
     export DATABASE_HOST=${aws_instance.database.private_ip}
     echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
 
-    sudo dnf install nano git -y
+    sudo dnf install nano git docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
     mkdir -p /proyecto
     cd /proyecto
 
     if [ ! -d Provesi ]; then
-      git clone ${local.repository}
+      git clone ${local.repository} Provesi
     fi
 
-    cd Provesi/manejador_pedidos
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
+    cd Provesi
 
-    docker build -t manejador-pedidos-app .
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_pedidos/Dockerfile
+
+    docker build \
+      -t manejador-pedidos-app \
+      -f manejador_pedidos/Dockerfile \
+      .
+
     docker run -d --name pedidos -p 8080:8080 manejador-pedidos-app
   EOT
 
@@ -273,18 +280,26 @@ resource "aws_instance" "manejador_inventario" {
     export DATABASE_HOST=${aws_instance.database.private_ip}
     echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
 
-    sudo dnf install nano git -y
+    sudo dnf install nano git docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
     mkdir -p /proyecto
     cd /proyecto
 
     if [ ! -d Provesi ]; then
-      git clone ${local.repository}
+      git clone ${local.repository} Provesi
     fi
 
-    cd Provesi/manejador_inventario
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
-    docker build -t manejador-inventario-app .
+    cd Provesi
+
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_inventario/Dockerfile
+
+    docker build \
+      -t manejador-inventario-app \
+      -f manejador_inventario/Dockerfile \
+      .
+
     docker run -d --name inventario -p 8080:8080 manejador-inventario-app
   EOT
 
