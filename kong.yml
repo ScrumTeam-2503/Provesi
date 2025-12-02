@@ -62,15 +62,3 @@ upstreams:
         unhealthy:
           tcp_failures: 2
           interval: 5
-
-plugins:
-  - name: response-transformer
-    config:
-      add:
-        json:
-          - 'message:"Servicio temporalmente no disponible, por favor intenta más tarde."'
-          - 'status:"degradado"'
-      remove:
-        headers:
-          - Server
-          - Via
