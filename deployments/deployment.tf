@@ -243,7 +243,7 @@ resource "aws_instance" "manejador_pedidos" {
     sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
 
     docker build -t manejador-pedidos-app .
-    docker run --name pedidos -it --rm -p 8080:8080 manejador-pedidos-app
+    docker run -d --name pedidos -p 8080:8080 manejador-pedidos-app
   EOT
 
   tags = merge(local.common_tags, {
@@ -285,7 +285,7 @@ resource "aws_instance" "manejador_inventario" {
     cd Provesi/manejador_inventario
     sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
     docker build -t manejador-inventario-app .
-    docker run --name inventario -it --rm -p 8080:8080 manejador-inventario-app
+    docker run -d --name inventario -p 8080:8080 manejador-inventario-app
   EOT
 
   tags = merge(local.common_tags, {
