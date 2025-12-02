@@ -239,7 +239,7 @@ resource "aws_instance" "manejador_pedidos" {
       git clone ${local.repository}
     fi
 
-    cd Provesi
+    cd Provesi/manejador_pedidos
     sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
 
     docker build -t manejador-pedidos-app .
@@ -282,9 +282,8 @@ resource "aws_instance" "manejador_inventario" {
       git clone ${local.repository}
     fi
 
-    cd Provesi
+    cd Provesi/manejador_inventario
     sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" Dockerfile
-
     docker build -t manejador-inventario-app .
     docker run --name inventario -it --rm -p 8080:8080 manejador-inventario-app
   EOT
