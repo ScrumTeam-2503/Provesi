@@ -258,7 +258,7 @@ def test_connection():
     """
     try:
         db = get_mongo_db()
-        if db:
+        if db is not None:  # ← Cambio aquí
             stats = db.command('dbstats')
             print(f"✅ Conexión exitosa a MongoDB")
             print(f"   Base de datos: {stats['db']}")
