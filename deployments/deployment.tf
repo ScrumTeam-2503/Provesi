@@ -42,7 +42,7 @@ provider "aws" {
 locals {
   project_name = "${var.project_prefix}-wms"
   repository   = "https://github.com/ScrumTeam-2503/Provesi.git"
-  branch       = "main"
+  branch       = "mongoBranch"
 
   common_tags = {
     Project   = local.project_name
