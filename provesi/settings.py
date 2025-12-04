@@ -160,3 +160,43 @@ AUTHENTICATION_BACKENDS = (
     "provesi.auth0backend.Auth0",
     "django.contrib.auth.backends.ModelBackend",
 )
+
+
+# ============================================
+# MONGODB CONFIGURATION
+# ============================================
+
+import os
+
+MONGODB_CONFIG = {
+    'host': os.getenv("MONGODB_HOST", "localhost"),
+    'port': int(os.getenv("MONGODB_PORT", "27017")),
+    'database': os.getenv("MONGODB_DATABASE", "provesi_mongodb"),
+    'username': os.getenv("MONGODB_USER", "provesi_user"),
+    'password': os.getenv("MONGODB_PASSWORD", "scrumteam"),
+    'authSource': os.getenv("MONGODB_AUTH_SOURCE", "provesi_mongodb"),
+}
+
+# Logging para MongoDB
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'provesi.mongodb_sync': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}

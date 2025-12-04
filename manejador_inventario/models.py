@@ -168,3 +168,45 @@ class Ubicacion(models.Model):
             'capacidad': self.capacidad,
             'stock': self.stock,
         }
+
+# ============================================
+# SIGNALS PARA SINCRONIZACIÓN AUTOMÁTICA
+# ============================================
+
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Producto)
+def producto_saved(sender, instance, created, **kwargs):
+    """Sincronizar producto a MongoDB cuando se crea o actualiza"""
+    from provesi.mongodb_sync import sync_producto_to_mongo
+    sync_producto_to_mongo(instance)
+
+
+@receiver(post_delete, sender=Producto)
+def producto_deleted(sender, instance, **kwargs):
+    """Eliminar producto de MongoDB cuando se elimina"""
+    from provesi.mongodb_sync import delete_producto_from_mongo
+    delete_producto_from_mongo(instance.codigo)
+
+
+@receiver(post_save, sender=Bodega)
+def bodega_saved(sender, instance, created, **kwargs):
+    """Sincronizar bodega a MongoDB cuando se crea o actualiza"""
+    from provesi.mongodb_sync import sync_bodega_to_mongo
+    sync_bodega_to_mongo(instance)
+
+
+@receiver(post_save, sender=Ubicacion)
+def ubicacion_saved(sender, instance, created, **kwargs):
+    """
+    Cuando se guarda una ubicación, re-sincronizar:
+    1. El producto (si tiene)
+    2. La bodega completa
+    """
+    from provesi.mongodb_sync import sync_producto_to_mongo, sync_bodega_to_mongo
+    
+    if instance.producto:
+        sync_producto_to_mongo(instance.producto)
+    
+    sync_bodega_to_mongo(instance.estanteria.bodega)

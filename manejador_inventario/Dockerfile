@@ -4,6 +4,7 @@ WORKDIR /app
 COPY . /app
 
 ENV DATABASE_HOST=<DATABASE_HOST>
+ENV MONGODB_HOST=<MONGODB_HOST>
 
 RUN apt-get update \
     && apt-get install -y gcc libpq-dev python3-dev \

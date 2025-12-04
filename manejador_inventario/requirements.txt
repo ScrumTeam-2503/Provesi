@@ -5,3 +5,5 @@ django-widget-tweaks==1.5.0
 social-auth-app-django==5.4.1
 requests==2.32.3
 PyJWT==2.9.0
+pymongo==4.6.0
+

@@ -92,3 +92,41 @@ class Item(models.Model):
             'producto': self.producto,
             'cantidad': self.cantidad,
         }
+
+
+# ============================================
+# SIGNALS PARA SINCRONIZACIÓN AUTOMÁTICA
+# ============================================
+
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Pedido)
+def pedido_saved(sender, instance, created, **kwargs):
+    """Sincronizar pedido a MongoDB cuando se crea o actualiza"""
+    from provesi.mongodb_sync import sync_pedido_to_mongo
+    sync_pedido_to_mongo(instance)
+
+
+@receiver(post_delete, sender=Pedido)
+def pedido_deleted(sender, instance, **kwargs):
+    """Eliminar pedido de MongoDB cuando se elimina"""
+    from provesi.mongodb_sync import delete_pedido_from_mongo
+    delete_pedido_from_mongo(instance.id)
+
+
+@receiver(post_save, sender=Item)
+def item_saved(sender, instance, created, **kwargs):
+    """Cuando se guarda un item, re-sincronizar el pedido completo"""
+    from provesi.mongodb_sync import sync_pedido_to_mongo
+    sync_pedido_to_mongo(instance.pedido)
+
+
+@receiver(post_delete, sender=Item)
+def item_deleted(sender, instance, **kwargs):
+    """Cuando se elimina un item, re-sincronizar el pedido completo"""
+    from provesi.mongodb_sync import sync_pedido_to_mongo
+    try:
+        sync_pedido_to_mongo(instance.pedido)
+    except:
+        pass  # El pedido ya no existe
