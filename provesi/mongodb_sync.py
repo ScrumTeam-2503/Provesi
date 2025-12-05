@@ -40,7 +40,7 @@ def sync_pedido_to_mongo(pedido):
     """
     try:
         db = get_mongo_db()
-        if not db:
+        if db is None:
             logger.warning(f"MongoDB no disponible, no se sincronizó pedido {pedido.id}")
             return False
         
@@ -95,7 +95,7 @@ def delete_pedido_from_mongo(pedido_id):
     """
     try:
         db = get_mongo_db()
-        if not db:
+        if db is None:
             return False
         
         result = db.pedidos.delete_one({'postgres_id': pedido_id})
@@ -113,7 +113,7 @@ def sync_producto_to_mongo(producto):
     """
     try:
         db = get_mongo_db()
-        if not db:
+        if db is None:
             logger.warning(f"MongoDB no disponible, no se sincronizó producto {producto.codigo}")
             return False
         
@@ -169,7 +169,7 @@ def delete_producto_from_mongo(codigo):
     """
     try:
         db = get_mongo_db()
-        if not db:
+        if db is None:
             return False
         
         result = db.productos.delete_one({'codigo': codigo})
@@ -187,7 +187,7 @@ def sync_bodega_to_mongo(bodega):
     """
     try:
         db = get_mongo_db()
-        if not db:
+        if db is None:
             logger.warning(f"MongoDB no disponible, no se sincronizó bodega {bodega.codigo}")
             return False
         
