@@ -571,7 +571,7 @@ resource "aws_instance" "manejador_inventario" {
 # ---------- EC2 - Kong API Gateway (CORREGIDO) ----------
 
 resource "aws_instance" "kong" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = data.aws_ami.amazon_linux.id
   instance_type               = "t3.micro"
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
