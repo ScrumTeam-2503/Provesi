@@ -217,42 +217,54 @@ resource "aws_instance" "mongodb" {
 
     # Agregar segunda llave SSH al usuario ubuntu
     echo "${local.ssh_public_keys[1]}" >> /home/ubuntu/.ssh/authorized_keys
-    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
-    chmod 600 /home/ubuntu/.ssh/authorized_keys
+    sudo chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+    sudo chmod 600 /home/ubuntu/.ssh/authorized_keys
 
     echo "======================================"
-    echo "🚀 Instalando MongoDB"
+    echo "� Clonando repositorio"
+    echo "======================================"
+
+    # Instalar git
+    sudo apt-get install -y git
+
+    # Clonar repositorio en la rama deployments
+    sudo mkdir -p /proyecto
+    cd /proyecto
+    sudo git clone -b deployments ${local.repository} Provesi
+
+    echo "======================================"
+    echo "�🚀 Instalando MongoDB 7.0"
     echo "======================================"
 
     # Actualizar sistema
-    apt-get update -y
-    apt-get upgrade -y
+    sudo apt-get update -y
+    sudo apt-get upgrade -y
 
     # Instalar dependencias
-    apt-get install -y curl gnupg
+    sudo apt-get install -y curl gnupg
 
-    # Importar clave GPG de MongoDB
+    # 1. Importar clave GPG
     curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-      gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-server-7.0.gpg
+      sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-server-7.0.gpg
 
-    # Agregar repositorio de MongoDB
+    # 2. Agregar repositorio
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
-      tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+      sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 
-    # Instalar MongoDB
-    apt-get update
-    apt-get install -y mongodb-org
+    # 3. Actualizar
+    sudo apt-get update
 
-    # Crear directorios
-    mkdir -p /var/lib/mongodb
-    mkdir -p /var/log/mongodb
-    chown -R mongodb:mongodb /var/lib/mongodb
-    chown -R mongodb:mongodb /var/log/mongodb
+    # 4. Instalar MongoDB
+    sudo apt-get install -y mongodb-org
 
-    # Configurar MongoDB
-    cat > /etc/mongod.conf <<'EOF'
-# mongod.conf - Configuración optimizada para Provesi
+    # 5. Crear directorios
+    sudo mkdir -p /var/lib/mongodb
+    sudo mkdir -p /var/log/mongodb
+    sudo chown -R mongodb:mongodb /var/lib/mongodb
+    sudo chown -R mongodb:mongodb /var/log/mongodb
 
+    # 6. Configurar
+    sudo tee /etc/mongod.conf > /dev/null <<'EOF'
 storage:
   dbPath: /var/lib/mongodb
   journal:
@@ -283,23 +295,33 @@ operationProfiling:
   slowOpThresholdMs: 100
 EOF
 
-    # Iniciar MongoDB
-    systemctl daemon-reload
-    systemctl start mongod
-    systemctl enable mongod
+    # 7. Iniciar
+    sudo systemctl daemon-reload
+    sudo systemctl start mongod
+    sudo systemctl enable mongod
 
-    # Esperar a que MongoDB inicie
+    # 8. Verificar
+    sleep 5
+    sudo systemctl status mongod
+
+    echo ""
+    echo "======================================"
+    echo "✅ MongoDB instalado"
+    echo "======================================"
+
+    # Esperar que MongoDB esté listo
     sleep 10
 
-    # Crear usuario administrador
+    echo "======================================"
+    echo "👤 Configurando usuarios"
+    echo "======================================"
+
+    # Crear usuario admin (primera vez sin auth)
     mongosh admin --eval '
     db.createUser({
       user: "admin",
       pwd: "scrumteam_admin_2024",
-      roles: [
-        { role: "root", db: "admin" },
-        { role: "userAdminAnyDatabase", db: "admin" }
-      ]
+      roles: [{ role: "root", db: "admin" }]
     })
     ' || echo "Usuario admin ya existe"
 
@@ -316,63 +338,20 @@ EOF
       ]
     })
 
-    // Crear colecciones
-    db.createCollection("pedidos", {
-      validator: {
-        $jsonSchema: {
-          bsonType: "object",
-          required: ["postgres_id"],
-          properties: {
-            postgres_id: { bsonType: "int" }
-          }
-        }
-      }
-    })
+    db.createCollection("pedidos")
+    db.createCollection("productos")
+    db.createCollection("bodegas")
 
-    db.createCollection("productos", {
-      validator: {
-        $jsonSchema: {
-          bsonType: "object",
-          required: ["codigo"],
-          properties: {
-            codigo: { bsonType: "string" }
-          }
-        }
-      }
-    })
+    db.pedidos.createIndex({ "postgres_id": 1 }, { unique: true })
+    db.pedidos.createIndex({ "estado": 1, "fecha_creacion": -1 })
+    db.productos.createIndex({ "codigo": 1 }, { unique: true })
+    db.productos.createIndex({ "nombre": "text" })
+    db.bodegas.createIndex({ "codigo": 1 }, { unique: true })
 
-    db.createCollection("bodegas", {
-      validator: {
-        $jsonSchema: {
-          bsonType: "object",
-          required: ["codigo"],
-          properties: {
-            codigo: { bsonType: "string" }
-          }
-        }
-      }
-    })
-
-    // Crear índices
-    db.pedidos.createIndex({ "postgres_id": 1 }, { unique: true, name: "idx_postgres_id" })
-    db.pedidos.createIndex({ "estado": 1, "fecha_creacion": -1 }, { name: "idx_estado_fecha" })
-    
-    db.productos.createIndex({ "codigo": 1 }, { unique: true, name: "idx_codigo" })
-    db.productos.createIndex({ "nombre": "text" }, { name: "idx_search_nombre" })
-    
-    db.bodegas.createIndex({ "codigo": 1 }, { unique: true, name: "idx_bodega_codigo" })
-    db.bodegas.createIndex({ "ciudad": 1 }, { name: "idx_ciudad" })
-
-    print("✅ Base de datos configurada exitosamente")
+    print("✅ Base de datos y usuarios configurados")
     EOMONGO
 
-    # Verificar instalación
-    mongosh -u provesi_user -p scrumteam --authenticationDatabase provesi_mongodb provesi_mongodb --eval "
-    print('✅ MongoDB instalado y configurado');
-    print('Base de datos: ' + db.getName());
-    print('Colecciones: ' + db.getCollectionNames().length);
-    "
-
+    echo ""
     echo "======================================"
     echo "✅ MongoDB listo!"
     echo "======================================"
@@ -382,198 +361,8 @@ EOF
     echo "Usuario: provesi_user"
     echo "Password: scrumteam"
 
-    # Script completo (copia y pega todo junto)
-echo "======================================"
-echo "🚀 Instalando MongoDB 7.0"
-echo "======================================"
-
-# 1. Importar clave GPG
-curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-  sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-server-7.0.gpg
-
-# 2. Agregar repositorio
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
-  sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-
-# 3. Actualizar
-sudo apt-get update
-
-# 4. Instalar MongoDB
-sudo apt-get install -y mongodb-org
-
-# 5. Crear directorios
-sudo mkdir -p /var/lib/mongodb
-sudo mkdir -p /var/log/mongodb
-sudo chown -R mongodb:mongodb /var/lib/mongodb
-sudo chown -R mongodb:mongodb /var/log/mongodb
-
-# 6. Configurar
-sudo tee /etc/mongod.conf > /dev/null <<'EOF'
-storage:
-  dbPath: /var/lib/mongodb
-  journal:
-    enabled: true
-  wiredTiger:
-    engineConfig:
-      cacheSizeGB: 0.5
-
-systemLog:
-  destination: file
-  logAppend: true
-  path: /var/log/mongodb/mongod.log
-  logRotate: reopen
-
-net:
-  port: 27017
-  bindIp: 0.0.0.0
-
-security:
-  authorization: enabled
-
-processManagement:
-  timeZoneInfo: /usr/share/zoneinfo
-  fork: false
-
-operationProfiling:
-  mode: slowOp
-  slowOpThresholdMs: 100
-EOF
-
-# 7. Iniciar
-sudo systemctl daemon-reload
-sudo systemctl start mongod
-sudo systemctl enable mongod
-
-# 8. Verificar
-sleep 5
-sudo systemctl status mongod
-
-echo ""
-echo "======================================"
-echo "✅ MongoDB instalado"
-echo "======================================"
-
-# Esperar que MongoDB esté listo
-sleep 10
-
-echo "======================================"
-echo "👤 Configurando usuarios"
-echo "======================================"
-
-# Crear usuario admin (primera vez sin auth)
-mongosh admin --eval '
-db.createUser({
-  user: "admin",
-  pwd: "scrumteam_admin_2024",
-  roles: [{ role: "root", db: "admin" }]
-})
-' || echo "Usuario admin ya existe"
-
-# Crear base de datos y usuario de aplicación
-mongosh -u admin -p scrumteam_admin_2024 --authenticationDatabase admin <<'EOMONGO'
-use provesi_mongodb
-
-db.createUser({
-  user: "provesi_user",
-  pwd: "scrumteam",
-  roles: [
-    { role: "readWrite", db: "provesi_mongodb" },
-    { role: "dbAdmin", db: "provesi_mongodb" }
-  ]
-})
-
-db.createCollection("pedidos")
-db.createCollection("productos")
-db.createCollection("bodegas")
-
-db.pedidos.createIndex({ "postgres_id": 1 }, { unique: true })
-db.pedidos.createIndex({ "estado": 1, "fecha_creacion": -1 })
-db.productos.createIndex({ "codigo": 1 }, { unique: true })
-db.productos.createIndex({ "nombre": "text" })
-db.bodegas.createIndex({ "codigo": 1 }, { unique: true })
-
-print("✅ Base de datos y usuarios configurados")
-EOMONGO
-
-echo ""
-echo "======================================"
-echo "✅ Configuración completa"
-echo "======================================"
-
-# Crear configuración correcta para MongoDB 7.0
-sudo tee /etc/mongod.conf > /dev/null <<'EOF'
-storage:
-  dbPath: /var/lib/mongodb
-
-systemLog:
-  destination: file
-  path: /var/log/mongodb/mongod.log
-  logAppend: true
-
-net:
-  port: 27017
-  bindIp: 0.0.0.0
-
-security:
-  authorization: enabled
-
-processManagement:
-  timeZoneInfo: /usr/share/zoneinfo
-EOF
-
-# Iniciar MongoDB
-sudo systemctl start mongod
-
-# Esperar 5 segundos
-sleep 5
-
-# Verificar
-sudo systemctl status mongod
-
-bash# Ver que está corriendo
-sudo systemctl is-active mongod && echo "✅ MongoDB activo" || echo "❌ MongoDB inactivo"
-
-# Ver puerto
-sudo ss -tulpn | grep 27017
-
-# Test básico
-mongosh --eval "print('MongoDB funcionando')"
-
-# Crear usuario admin (primera vez, sin autenticación)
-mongosh admin --eval '
-db.createUser({
-  user: "admin",
-  pwd: "scrumteam_admin_2024",
-  roles: [{ role: "root", db: "admin" }]
-})
-'
-
-# Crear base de datos y usuario de aplicación
-mongosh -u admin -p scrumteam_admin_2024 --authenticationDatabase admin <<'EOMONGO'
-use provesi_mongodb
-
-db.createUser({
-  user: "provesi_user",
-  pwd: "scrumteam",
-  roles: [
-    { role: "readWrite", db: "provesi_mongodb" },
-    { role: "dbAdmin", db: "provesi_mongodb" }
-  ]
-})
-
-db.createCollection("pedidos")
-db.createCollection("productos")
-db.createCollection("bodegas")
-
-db.pedidos.createIndex({ "postgres_id": 1 }, { unique: true })
-db.pedidos.createIndex({ "estado": 1, "fecha_creacion": -1 })
-db.productos.createIndex({ "codigo": 1 }, { unique: true })
-db.bodegas.createIndex({ "codigo": 1 }, { unique: true })
-
-print("✅ Base de datos configurada")
-EOMONGO
-
-mongosh -u provesi_user -p scrumteam --authenticationDatabase provesi_mongodb provesi_mongodb --eval "db.getCollectionNames()"
+    # Verificar conexión
+    mongosh -u provesi_user -p scrumteam --authenticationDatabase provesi_mongodb provesi_mongodb --eval "db.getCollectionNames()"
 
   EOT
 
