@@ -2,7 +2,7 @@
 # ********** Arquitectura y diseño de Software - ISIS2503 **********
 # ******************** Grupo 6: SCRUM Team *************************
 #
-# Infraestructura para WMS de provesi con MongoDB
+# Infraestructura para WMS de provesi con MongoDB + Servicio Reportes
 # ******************************************************************
 
 # ---------- Variables ----------
@@ -118,6 +118,22 @@ resource "aws_security_group" "traffic_app" {
   })
 }
 
+resource "aws_security_group" "traffic_reportes" {
+  name        = "${var.project_prefix}-traffic-reportes"
+  description = "Allow FastAPI Reportes traffic (8000)"
+
+  ingress {
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-traffic-reportes"
+  })
+}
+
 resource "aws_security_group" "traffic_db" {
   name        = "${var.project_prefix}-traffic-db"
   description = "Allow PostgreSQL access"
@@ -221,7 +237,7 @@ resource "aws_instance" "mongodb" {
     sudo chmod 600 /home/ubuntu/.ssh/authorized_keys
 
     echo "======================================"
-    echo "� Clonando repositorio"
+    echo "📁 Clonando repositorio"
     echo "======================================"
 
     # Instalar git
@@ -233,7 +249,7 @@ resource "aws_instance" "mongodb" {
     sudo git clone -b deployments ${local.repository} Provesi
 
     echo "======================================"
-    echo "�🚀 Instalando MongoDB 7.0"
+    echo "🚀 Instalando MongoDB 7.0"
     echo "======================================"
 
     # Actualizar sistema
@@ -372,6 +388,296 @@ EOF
   })
 }
 
+# ---------- EC2 - PostgreSQL DB ----------
+
+resource "aws_instance" "database" {
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.provesi_team.key_name
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [
+    aws_security_group.traffic_db.id,
+    aws_security_group.traffic_ssh.id
+  ]
+
+  user_data = <<-EOT
+    #!/bin/bash
+    
+    # Agregar segunda llave SSH al usuario ubuntu
+    echo "${local.ssh_public_keys[1]}" >> /home/ubuntu/.ssh/authorized_keys
+    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+    chmod 600 /home/ubuntu/.ssh/authorized_keys
+
+    apt-get update -y
+    apt-get install -y docker.io
+    docker run --restart=always -d \
+      -e POSTGRES_USER=provesi_user \
+      -e POSTGRES_DB=provesi_db \
+      -e POSTGRES_PASSWORD=scrumteam \
+      -p 5432:5432 \
+      --name provesi-db postgres
+  EOT
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-db",
+    Role = "database"
+  })
+}
+
+# ---------- EC2 - Servicio de Reportes ----------
+
+resource "aws_instance" "servicio_reportes" {
+  ami                         = "ami-051685736c7b35f95"  # Amazon Linux 2
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.provesi_team.key_name
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [
+    aws_security_group.traffic_reportes.id,
+    aws_security_group.traffic_ssh.id
+  ]
+
+  user_data = <<-EOT
+    #!/bin/bash
+    set -e
+
+    # Logging
+    exec > >(tee /var/log/user-data.log)
+    exec 2>&1
+
+    echo "======================================"
+    echo "🔑 Configurando llaves SSH"
+    echo "======================================"
+
+    # Agregar segunda llave SSH
+    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
+    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
+    chmod 600 /home/ec2-user/.ssh/authorized_keys
+
+    echo "======================================"
+    echo "📦 Instalando dependencias"
+    echo "======================================"
+
+    # Instalar Docker y Git
+    sudo dnf install nano git docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    echo "======================================"
+    echo "📁 Clonando repositorio"
+    echo "======================================"
+
+    # Clonar repositorio
+    mkdir -p /proyecto
+    cd /proyecto
+
+    if [ ! -d Provesi ]; then
+      git clone ${local.repository} Provesi
+    fi
+
+    cd Provesi/servicio_reportes
+
+    echo "======================================"
+    echo "🐳 Construyendo imagen Docker"
+    echo "======================================"
+
+    # Build imagen Docker
+    docker build -t servicio-reportes:latest .
+
+    echo "======================================"
+    echo "🚀 Ejecutando servicio de reportes"
+    echo "======================================"
+
+    # Ejecutar contenedor con IPs reales inyectadas
+    docker run -d --name servicio-reportes --restart=always \
+      -p 8000:8000 \
+      -e DATABASE_HOST=${aws_instance.database.private_ip} \
+      -e DATABASE_NAME=provesi_db \
+      -e DATABASE_USER=provesi_user \
+      -e DATABASE_PASSWORD=scrumteam \
+      -e DATABASE_PORT=5432 \
+      -e MONGODB_HOST=${aws_instance.mongodb.private_ip} \
+      -e MONGODB_PORT=27017 \
+      -e MONGODB_DATABASE=provesi_mongodb \
+      -e MONGODB_USER=provesi_user \
+      -e MONGODB_PASSWORD=scrumteam \
+      -e MONGODB_AUTH_SOURCE=provesi_mongodb \
+      servicio-reportes:latest
+
+    echo ""
+    echo "======================================"
+    echo "✅ Servicio de reportes desplegado"
+    echo "======================================"
+    echo "URL: http://$(hostname -I | awk '{print $1}'):8000"
+    echo "Health Check: http://$(hostname -I | awk '{print $1}'):8000/health"
+    echo "Documentación: http://$(hostname -I | awk '{print $1}'):8000/docs"
+    echo ""
+    echo "Conexiones configuradas:"
+    echo "  PostgreSQL: ${aws_instance.database.private_ip}:5432"
+    echo "  MongoDB: ${aws_instance.mongodb.private_ip}:27017"
+
+    # Verificar que el contenedor esté corriendo
+    sleep 5
+    docker ps | grep servicio-reportes || echo "⚠️ Contenedor no está corriendo"
+
+  EOT
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-servicio-reportes",
+    Role = "servicio-reportes"
+  })
+
+  depends_on = [
+    aws_instance.database,
+    aws_instance.mongodb
+  ]
+}
+
+# ---------- EC2 - Manejador Pedidos (a, b, c) ----------
+
+resource "aws_instance" "manejador_pedidos" {
+  for_each = toset(["a", "b", "c"])
+
+  ami                         = "ami-051685736c7b35f95"
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.provesi_team.key_name
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [
+    aws_security_group.traffic_django.id,
+    aws_security_group.traffic_ssh.id
+  ]
+
+  user_data = <<-EOT
+    #!/bin/bash
+
+    # Agregar segunda llave SSH al usuario ec2-user
+    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
+    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
+    chmod 600 /home/ec2-user/.ssh/authorized_keys
+
+    # Variables de entorno
+    export DATABASE_HOST=${aws_instance.database.private_ip}
+    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
+    export REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000
+    
+    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
+    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
+    echo "REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000" >> /etc/environment
+
+    sudo dnf install nano git docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    mkdir -p /proyecto
+    cd /proyecto
+
+    if [ ! -d Provesi ]; then
+      git clone ${local.repository} Provesi
+    fi
+
+    cd Provesi
+
+    # Configurar IPs en Dockerfile
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_pedidos/Dockerfile
+    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_pedidos/Dockerfile
+
+    docker build \
+      -t manejador-pedidos-app \
+      -f manejador_pedidos/Dockerfile \
+      .
+
+    docker run -d --name pedidos --restart=always \
+      -e DATABASE_HOST=${aws_instance.database.private_ip} \
+      -e MONGODB_HOST=${aws_instance.mongodb.private_ip} \
+      -e REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000 \
+      -p 8080:8080 \
+      manejador-pedidos-app
+  EOT
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-manejador-pedidos-${each.key}",
+    Role = "manejador-pedidos"
+  })
+
+  depends_on = [
+    aws_instance.database,
+    aws_instance.mongodb,
+    aws_instance.servicio_reportes
+  ]
+}
+
+# ---------- EC2 - Manejador Inventario (a, b) ----------
+
+resource "aws_instance" "manejador_inventario" {
+  for_each = toset(["a", "b"])
+
+  ami                         = "ami-051685736c7b35f95"
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.provesi_team.key_name
+  associate_public_ip_address = true
+  vpc_security_group_ids      = [
+    aws_security_group.traffic_django.id,
+    aws_security_group.traffic_ssh.id
+  ]
+
+  user_data = <<-EOT
+    #!/bin/bash
+
+    # Agregar segunda llave SSH al usuario ec2-user
+    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
+    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
+    chmod 600 /home/ec2-user/.ssh/authorized_keys
+
+    # Variables de entorno
+    export DATABASE_HOST=${aws_instance.database.private_ip}
+    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
+    export REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000
+    
+    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
+    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
+    echo "REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000" >> /etc/environment
+
+    sudo dnf install nano git docker -y
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    mkdir -p /proyecto
+    cd /proyecto
+
+    if [ ! -d Provesi ]; then
+      git clone ${local.repository} Provesi
+    fi
+
+    cd Provesi
+
+    # Configurar IPs en Dockerfile
+    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_inventario/Dockerfile
+    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_inventario/Dockerfile
+
+    docker build \
+      -t manejador-inventario-app \
+      -f manejador_inventario/Dockerfile \
+      .
+
+    docker run -d --name inventario --restart=always \
+      -e DATABASE_HOST=${aws_instance.database.private_ip} \
+      -e MONGODB_HOST=${aws_instance.mongodb.private_ip} \
+      -e REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000 \
+      -p 8080:8080 \
+      manejador-inventario-app
+  EOT
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-manejador-inventario-${each.key}",
+    Role = "manejador-inventario"
+  })
+
+  depends_on = [
+    aws_instance.database,
+    aws_instance.mongodb,
+    aws_instance.servicio_reportes
+  ]
+}
+
 # ---------- EC2 - Kong API Gateway ----------
 
 resource "aws_instance" "kong" {
@@ -497,180 +803,6 @@ resource "aws_instance" "manejador_busquedas" {
   })
 }
 
-# ---------- EC2 - PostgreSQL DB ----------
-
-resource "aws_instance" "database" {
-  ami                         = data.aws_ami.ubuntu.id
-  instance_type               = var.instance_type
-  key_name                    = aws_key_pair.provesi_team.key_name
-  associate_public_ip_address = true
-  vpc_security_group_ids      = [
-    aws_security_group.traffic_db.id,
-    aws_security_group.traffic_ssh.id
-  ]
-
-  user_data = <<-EOT
-    #!/bin/bash
-    
-    # Agregar segunda llave SSH al usuario ubuntu
-    echo "${local.ssh_public_keys[1]}" >> /home/ubuntu/.ssh/authorized_keys
-    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
-    chmod 600 /home/ubuntu/.ssh/authorized_keys
-
-    apt-get update -y
-    apt-get install -y docker.io
-    docker run --restart=always -d \
-      -e POSTGRES_USER=provesi_user \
-      -e POSTGRES_DB=provesi_db \
-      -e POSTGRES_PASSWORD=scrumteam \
-      -p 5432:5432 \
-      --name provesi-db postgres
-  EOT
-
-  tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-db",
-    Role = "database"
-  })
-}
-
-# ---------- EC2 - Manejador Pedidos (a, b, c) ----------
-
-resource "aws_instance" "manejador_pedidos" {
-  for_each = toset(["a", "b", "c"])
-
-  ami                         = "ami-051685736c7b35f95"
-  instance_type               = var.instance_type
-  key_name                    = aws_key_pair.provesi_team.key_name
-  associate_public_ip_address = true
-  vpc_security_group_ids      = [
-    aws_security_group.traffic_django.id,
-    aws_security_group.traffic_ssh.id
-  ]
-
-  user_data = <<-EOT
-    #!/bin/bash
-
-    # Agregar segunda llave SSH al usuario ec2-user
-    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-
-    # Variables de entorno
-    export DATABASE_HOST=${aws_instance.database.private_ip}
-    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
-    
-    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
-    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
-
-    sudo dnf install nano git docker -y
-    sudo systemctl enable docker
-    sudo systemctl start docker
-
-    mkdir -p /proyecto
-    cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository} Provesi
-    fi
-
-    cd Provesi
-
-    # Configurar IPs en Dockerfile
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_pedidos/Dockerfile
-    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_pedidos/Dockerfile
-
-    docker build \
-      -t manejador-pedidos-app \
-      -f manejador_pedidos/Dockerfile \
-      .
-
-    docker run -d --name pedidos --restart=always \
-      -e DATABASE_HOST=${aws_instance.database.private_ip} \
-      -e MONGODB_HOST=${aws_instance.mongodb.private_ip} \
-      -p 8080:8080 \
-      manejador-pedidos-app
-  EOT
-
-  tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-manejador-pedidos-${each.key}",
-    Role = "manejador-pedidos"
-  })
-
-  depends_on = [
-    aws_instance.database,
-    aws_instance.mongodb
-  ]
-}
-
-# ---------- EC2 - Manejador Inventario (a, b) ----------
-
-resource "aws_instance" "manejador_inventario" {
-  for_each = toset(["a", "b"])
-
-  ami                         = "ami-051685736c7b35f95"
-  instance_type               = var.instance_type
-  key_name                    = aws_key_pair.provesi_team.key_name
-  associate_public_ip_address = true
-  vpc_security_group_ids      = [
-    aws_security_group.traffic_django.id,
-    aws_security_group.traffic_ssh.id
-  ]
-
-  user_data = <<-EOT
-    #!/bin/bash
-
-    # Agregar segunda llave SSH al usuario ec2-user
-    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-
-    # Variables de entorno
-    export DATABASE_HOST=${aws_instance.database.private_ip}
-    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
-    
-    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
-    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
-
-    sudo dnf install nano git docker -y
-    sudo systemctl enable docker
-    sudo systemctl start docker
-
-    mkdir -p /proyecto
-    cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository} Provesi
-    fi
-
-    cd Provesi
-
-    # Configurar IPs en Dockerfile
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_inventario/Dockerfile
-    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_inventario/Dockerfile
-
-    docker build \
-      -t manejador-inventario-app \
-      -f manejador_inventario/Dockerfile \
-      .
-
-    docker run -d --name inventario --restart=always \
-      -e DATABASE_HOST=${aws_instance.database.private_ip} \
-      -e MONGODB_HOST=${aws_instance.mongodb.private_ip} \
-      -p 8080:8080 \
-      manejador-inventario-app
-  EOT
-
-  tags = merge(local.common_tags, {
-    Name = "${var.project_prefix}-manejador-inventario-${each.key}",
-    Role = "manejador-inventario"
-  })
-
-  depends_on = [
-    aws_instance.database,
-    aws_instance.mongodb
-  ]
-}
-
 # ---------- Outputs ----------
 
 output "ssh_connection_info" {
@@ -723,6 +855,16 @@ output "mongodb_connection_string" {
   sensitive   = true
 }
 
+output "servicio_reportes_public_ip" {
+  value       = aws_instance.servicio_reportes.public_ip
+  description = "IP pública del servicio de reportes"
+}
+
+output "servicio_reportes_private_ip" {
+  value       = aws_instance.servicio_reportes.private_ip
+  description = "IP privada del servicio de reportes (usar en Django)"
+}
+
 output "manejador_pedidos_public_ips" {
   value       = { for id, inst in aws_instance.manejador_pedidos : id => inst.public_ip }
   description = "IPs públicas de instancias de pedidos"
@@ -751,6 +893,7 @@ output "infrastructure_summary" {
       endpoints = {
         pedidos    = "http://${aws_instance.kong.public_ip}:8000/manejador_pedidos/pedidos/"
         inventario = "http://${aws_instance.kong.public_ip}:8000/manejador_inventario/bodegas/"
+        reportes   = "http://${aws_instance.kong.public_ip}:8000/reportes/"
       }
     }
     postgresql = {
@@ -764,6 +907,14 @@ output "infrastructure_summary" {
       public_ip  = aws_instance.mongodb.public_ip
       ssh_user   = "ubuntu"
       connection = "mongodb://provesi_user:scrumteam@${aws_instance.mongodb.private_ip}:27017/provesi_mongodb"
+    }
+    servicio_reportes = {
+      private_ip   = aws_instance.servicio_reportes.private_ip
+      public_ip    = aws_instance.servicio_reportes.public_ip
+      ssh_user     = "ec2-user"
+      health_check = "http://${aws_instance.servicio_reportes.public_ip}:8000/health"
+      api_docs     = "http://${aws_instance.servicio_reportes.public_ip}:8000/docs"
+      redoc        = "http://${aws_instance.servicio_reportes.public_ip}:8000/redoc"
     }
     django_instances = {
       pedidos = {
@@ -793,4 +944,33 @@ output "infrastructure_summary" {
     }
   }
   description = "Resumen completo de la infraestructura"
+}
+
+output "quick_access_urls" {
+  value = <<-EOT
+    
+    ╔════════════════════════════════════════════════════════════════╗
+    ║          🚀 PROVESI WMS - INFRAESTRUCTURA DESPLEGADA          ║
+    ╚════════════════════════════════════════════════════════════════╝
+    
+    📊 SERVICIO DE REPORTES:
+       Health Check:   http://${aws_instance.servicio_reportes.public_ip}:8000/health
+       API Docs:       http://${aws_instance.servicio_reportes.public_ip}:8000/docs
+       Reportes:       http://${aws_instance.servicio_reportes.public_ip}:8000/reportes/inventario
+    
+    🌐 KONG API GATEWAY:
+       Pedidos:        http://${aws_instance.kong.public_ip}:8000/manejador_pedidos/pedidos/
+       Inventario:     http://${aws_instance.kong.public_ip}:8000/manejador_inventario/bodegas/
+       Reportes:       http://${aws_instance.kong.public_ip}:8000/reportes/
+    
+    🗄️ BASES DE DATOS:
+       PostgreSQL:     ${aws_instance.database.private_ip}:5432
+       MongoDB:        ${aws_instance.mongodb.private_ip}:27017
+    
+    💡 Para SSH:
+       ssh -i tu-llave.pem ec2-user@${aws_instance.servicio_reportes.public_ip}
+    
+    ╚════════════════════════════════════════════════════════════════╝
+  EOT
+  description = "URLs de acceso rápido"
 }
