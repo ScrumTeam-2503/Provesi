@@ -650,7 +650,7 @@ upstreams:
     targets:
       - target: ${aws_instance.manejador_pedidos["a"].private_ip}:8080
       - target: ${aws_instance.manejador_pedidos["b"].private_ip}:8080
-      - target: ${aws_instance.manejador_pedidos["c"].private_ip}:8080
+      # - target: ${aws_instance.manejador_pedidos["c"].private_ip}:8080
 
   - name: manejador_inventario_upstream
     targets:
