@@ -9,16 +9,17 @@ COPY models.py .
 COPY database.py .
 COPY pdf_generator.py .
 
-# Variables de entorno (se pueden sobrescribir en runtime)
+# Variables de entorno con defaults genéricos
+# Las IPs reales se inyectan en runtime con -e flags
 # PostgreSQL
-ENV DATABASE_HOST=34.229.88.183
+ENV DATABASE_HOST=localhost
 ENV DATABASE_NAME=provesi_db
 ENV DATABASE_USER=provesi_user
 ENV DATABASE_PASSWORD=scrumteam
 ENV DATABASE_PORT=5432
 
-# MongoDB - Usar nombre del servicio en Docker o IP del servidor
-ENV MONGODB_HOST=mongodb
+# MongoDB
+ENV MONGODB_HOST=localhost
 ENV MONGODB_PORT=27017
 ENV MONGODB_DATABASE=provesi_mongodb
 ENV MONGODB_USER=provesi_user

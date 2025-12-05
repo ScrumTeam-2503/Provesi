@@ -35,7 +35,7 @@ def get_mongo_db():
     """
     try:
         config = {
-            'host': os.getenv("MONGODB_HOST", "mongodb"),  # Usar 'mongodb' en Docker, o IP del servidor
+            'host': os.getenv("MONGODB_HOST", "localhost"),
             'port': int(os.getenv("MONGODB_PORT", "27017")),
             'database': os.getenv("MONGODB_DATABASE", "provesi_mongodb"),
             'username': os.getenv("MONGODB_USER", "provesi_user"),

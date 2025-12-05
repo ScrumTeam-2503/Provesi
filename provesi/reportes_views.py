@@ -12,10 +12,10 @@ import os
 logger = logging.getLogger(__name__)
 
 # URL del microservicio de reportes
-# En producción, usar la IP/hostname del servidor donde corre el microservicio
-# Ejemplo: REPORTES_SERVICE_URL=http://192.168.1.100:8000
-# O con Kong: REPORTES_SERVICE_URL=http://kong:8000/reportes
-REPORTES_SERVICE_URL = os.getenv('REPORTES_SERVICE_URL', 'http://servicio-reportes:8000')
+# Se configura vía variable de entorno en runtime
+# Desarrollo: http://localhost:8000
+# Producción: Se inyecta la IP real desde Terraform/deployment script
+REPORTES_SERVICE_URL = os.getenv('REPORTES_SERVICE_URL', 'http://localhost:8000')
 
 
 @login_required
