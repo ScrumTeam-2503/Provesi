@@ -453,7 +453,7 @@ resource "aws_instance" "servicio_reportes" {
 # ---------- EC2 - Manejador de Pedidos ----------
 
 resource "aws_instance" "manejador_pedidos" {
-  for_each = toset(["a", "b", "c"])
+  for_each = toset(["a", "b"])
 
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
