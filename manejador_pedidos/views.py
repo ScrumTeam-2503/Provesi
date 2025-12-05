@@ -85,6 +85,11 @@ def pedido_create(request):
         form = PedidoForm(request.POST)
         if form.is_valid():
             pedido = create_pedido(form)
+            
+            # SINCRONIZAR A MONGODB
+            from provesi.mongodb_sync import sync_pedido_to_mongo
+            sync_pedido_to_mongo(pedido)
+            
             messages.success(request, f"Pedido {pedido.id} creado exitosamente.")
             return HttpResponseRedirect(reverse('pedidosList'))
     else:
@@ -108,6 +113,11 @@ def item_create(request, pedido_id):
         form = ItemForm(request.POST)
         if form.is_valid():
             item = create_item(form, pedido)
+            
+            # SINCRONIZAR PEDIDO A MONGODB
+            from provesi.mongodb_sync import sync_pedido_to_mongo
+            sync_pedido_to_mongo(pedido)
+            
             messages.success(request, f"Ítem {item.producto} agregado exitosamente.")
             return HttpResponseRedirect(reverse('pedidoDetail', args=[pedido.id]))
     else:

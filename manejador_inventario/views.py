@@ -85,6 +85,11 @@ def bodega_create(request):
         form = BodegaForm(request.POST)
         if form.is_valid():
             bodega = create_bodega(form)
+            
+            # SINCRONIZAR A MONGODB
+            from provesi.mongodb_sync import sync_bodega_to_mongo
+            sync_bodega_to_mongo(bodega)
+            
             messages.success(request, f"Bodega {bodega.codigo} creada exitosamente.")
             return HttpResponseRedirect(reverse('bodegasList'))
     else:
@@ -156,6 +161,11 @@ def producto_create(request):
         form = ProductoForm(request.POST)
         if form.is_valid():
             producto = create_producto(form)
+            
+            # SINCRONIZAR A MONGODB
+            from provesi.mongodb_sync import sync_producto_to_mongo
+            sync_producto_to_mongo(producto)
+            
             messages.success(request, f"Producto {producto.codigo} creado exitosamente.")
             return HttpResponseRedirect(reverse('productosList'))
     else:
