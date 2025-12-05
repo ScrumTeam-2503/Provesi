@@ -692,20 +692,83 @@ resource "aws_instance" "kong" {
 
   user_data = <<-EOT
     #!/bin/bash
+    # NO usar set -e aquí porque queremos que Kong se inicie incluso si algunos checks fallan
+    
+    # Logging mejorado
+    exec > >(tee /var/log/user-data.log)
+    exec 2>&1
+
+    echo "======================================"
+    echo "🔑 Configurando llaves SSH"
+    echo "======================================"
 
     # Agregar segunda llave SSH al usuario ec2-user
     echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
     chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
     chmod 600 /home/ec2-user/.ssh/authorized_keys
 
-    sudo dnf install nano git -y
+    echo "======================================"
+    echo "📦 Instalando dependencias"
+    echo "======================================"
+
+    sudo dnf install -y nano git docker nc
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    # Esperar a que Docker esté listo
+    sleep 5
+
+    echo "======================================"
+    echo "📁 Clonando repositorio"
+    echo "======================================"
 
     sudo mkdir -p /proyecto
     cd /proyecto
-    sudo git clone ${local.repository}
+    
+    if [ ! -d "Provesi" ]; then
+      sudo git clone ${local.repository}
+    fi
+    
     cd Provesi
 
-    # Insert IPs into kong.yaml
+    echo "======================================"
+    echo "⏳ Esperando instancias Django..."
+    echo "======================================"
+
+    # Función para verificar si una IP responde
+    wait_for_instance() {
+      local ip=$1
+      local max_attempts=30
+      local attempt=0
+      
+      echo "Esperando a que $ip:8080 esté disponible..."
+      
+      while [ $attempt -lt $max_attempts ]; do
+        if nc -z -w5 $ip 8080 2>/dev/null; then
+          echo "✅ $ip:8080 está disponible"
+          return 0
+        fi
+        attempt=$((attempt + 1))
+        echo "  Intento $attempt/$max_attempts..."
+        sleep 10
+      done
+      
+      echo "⚠️ Timeout esperando $ip (continuando de todas formas)"
+      return 0  # No fallar, continuar con el deployment
+    }
+
+    # Esperar a que las instancias Django estén disponibles (best effort)
+    wait_for_instance ${aws_instance.manejador_pedidos["a"].private_ip}
+    wait_for_instance ${aws_instance.manejador_inventario["a"].private_ip}
+
+    echo "======================================"
+    echo "⚙️ Configurando Kong"
+    echo "======================================"
+
+    # Backup del archivo original
+    cp kong.yml kong.yml.bak
+
+    # Insert IPs into kong.yml
     sed -i "s/<PEDIDOS_A_HOST>/${aws_instance.manejador_pedidos["a"].private_ip}/g" kong.yml
     sed -i "s/<PEDIDOS_B_HOST>/${aws_instance.manejador_pedidos["b"].private_ip}/g" kong.yml
     sed -i "s/<PEDIDOS_C_HOST>/${aws_instance.manejador_pedidos["c"].private_ip}/g" kong.yml
@@ -713,12 +776,47 @@ resource "aws_instance" "kong" {
     sed -i "s/<INVENTARIO_A_HOST>/${aws_instance.manejador_inventario["a"].private_ip}/g" kong.yml
     sed -i "s/<INVENTARIO_B_HOST>/${aws_instance.manejador_inventario["b"].private_ip}/g" kong.yml
 
-    docker network create kong-network
-    docker run -d --name kong --network=kong-network --restart=always \
+    # Verificar que las IPs se reemplazaron
+    echo "Contenido de kong.yml después de sed:"
+    cat kong.yml | grep -A5 "targets:"
+
+    echo "======================================"
+    echo "🐳 Iniciando Kong"
+    echo "======================================"
+
+    # Crear red de Docker
+    docker network create kong-network 2>/dev/null || true
+    
+    # Ejecutar Kong
+    docker run -d \
+      --name kong \
+      --network=kong-network \
+      --restart=always \
       -v "$(pwd):/kong/declarative/" \
       -e "KONG_DATABASE=off" \
       -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
-      -p 8000:8000 kong/kong-gateway
+      -e "KONG_LOG_LEVEL=debug" \
+      -p 8000:8000 \
+      kong/kong-gateway
+
+    echo ""
+    echo "======================================"
+    echo "✅ Kong desplegado"
+    echo "======================================"
+    echo "Kong Gateway: http://$(hostname -I | awk '{print $1}'):8000"
+    
+    # Esperar y verificar que Kong está corriendo
+    sleep 15
+    
+    if docker ps | grep kong; then
+      echo "✅ Kong está corriendo correctamente"
+      docker logs kong --tail 20
+    else
+      echo "❌ Kong no está corriendo"
+      docker logs kong || true
+      exit 1
+    fi
+
   EOT
 
   tags = merge(local.common_tags, {
