@@ -571,46 +571,61 @@ resource "aws_instance" "manejador_inventario" {
 # ---------- EC2 - Kong API Gateway (CORREGIDO) ----------
 
 resource "aws_instance" "kong" {
-  ami                         = data.aws_ami.amazon_linux.id
+  ami                         = "ami-051685736c7b35f95"
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [
+
+  vpc_security_group_ids = [
     aws_security_group.traffic_app.id,
     aws_security_group.traffic_ssh.id
   ]
 
-  # CORREGIDO: Usar user_data sin base64encode (AWS lo codifica automáticamente)
+  # Si el SO hace shutdown, la instancia pasa a STOP (no se termina de una)
+  instance_initiated_shutdown_behavior = "stop"
+
+  # IMPORTANTE: sin base64encode, script directo
   user_data = <<-EOT
-    #!/bin/bash
-    
-    exec > >(tee /var/log/user-data.log) 2>&1
-    
-    # SSH key
-    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
-    
-    # Instalar Docker
-    yum update -y
-    yum install -y docker git
-    systemctl start docker
-    systemctl enable docker
-    usermod -aG docker ec2-user
-    
-    # Esperar Docker
-    sleep 15
-    
-    # Crear directorio para Kong config
-    mkdir -p /proyecto/kong
-    
-    # Crear kong.yml directamente con las IPs de los backends
-    cat > /proyecto/kong/kong.yml <<'KONGEOF'
+#!/bin/bash
+exec > /var/log/user-data.log 2>&1
+set -x
+
+# --- SSH key para el equipo ---
+mkdir -p /home/ec2-user/.ssh
+chown ec2-user:ec2-user /home/ec2-user/.ssh
+chmod 700 /home/ec2-user/.ssh
+
+echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
+chmod 600 /home/ec2-user/.ssh/authorized_keys
+chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
+
+# --- Paquetes básicos ---
+dnf install -y docker git || true
+
+# --- Docker ---
+systemctl enable docker || true
+systemctl start docker || true
+
+# Darle tiempo a Docker
+sleep 15
+
+# --- Código del proyecto ---
+mkdir -p /proyecto
+cd /proyecto || exit 1
+
+if [ ! -d "Provesi" ]; then
+  git clone ${local.repository} Provesi || true
+fi
+
+cd Provesi || exit 1
+
+# --- Configuración declarativa de Kong ---
+cat > /proyecto/Provesi/kong.yml <<'KONGEOF'
 _format_version: "2.1"
 
 services:
-  - host: manejador_pedidos_upstream
-    name: manejador_pedidos_service
+  - name: manejador_pedidos_service
+    host: manejador_pedidos_upstream
     protocol: http
     routes:
       - name: manejador_pedidos
@@ -620,8 +635,8 @@ services:
         strip_path: false
         preserve_host: true
 
-  - host: manejador_inventario_upstream
-    name: manejador_inventario_service
+  - name: manejador_inventario_service
+    host: manejador_inventario_upstream
     protocol: http
     routes:
       - name: manejador_inventario
@@ -642,28 +657,27 @@ upstreams:
       - target: ${aws_instance.manejador_inventario["a"].private_ip}:8080
       - target: ${aws_instance.manejador_inventario["b"].private_ip}:8080
 KONGEOF
-    
-    # Network para Kong
-    docker network create kong-network 2>/dev/null || true
-    
-    # Ejecutar Kong
-    docker run -d \
-      --name kong \
-      --network=kong-network \
-      --restart=always \
-      -v /proyecto/kong:/kong/declarative/ \
-      -e "KONG_DATABASE=off" \
-      -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
-      -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
-      -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
-      -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
-      -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
-      -p 8000:8000 \
-      -p 8001:8001 \
-      kong/kong-gateway:latest
-    
-    echo "Kong deployment completed!"
-  EOT
+
+# --- Red de Docker para Kong ---
+docker network create kong-network || true
+
+# Por si ya existe de algún intento anterior
+docker rm -f kong 2>/dev/null || true
+
+# --- Contenedor de Kong ---
+docker run -d \
+  --name kong \
+  --network=kong-network \
+  --restart=always \
+  -v /proyecto/Provesi:/kong/declarative/ \
+  -e "KONG_DATABASE=off" \
+  -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
+  -p 8000:8000 \
+  kong/kong-gateway || true
+
+# Deja viva la instancia un rato por si algo raro
+sleep 300
+EOT
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-kong",
