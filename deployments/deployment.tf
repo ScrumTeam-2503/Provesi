@@ -434,7 +434,7 @@ resource "aws_instance" "manejador_busquedas" {
   associate_public_ip_address = true
 
   vpc_security_group_ids = [
-    aws_security_group.traffic_api.id,
+    aws_security_group.traffic_app.id,
     aws_security_group.traffic_ssh.id
   ]
 
