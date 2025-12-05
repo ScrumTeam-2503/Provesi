@@ -73,6 +73,23 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+# ---------- AMI Amazon Linux 2023 para Kong ----------
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 # ---------- SSH Key Pair ----------
 
 resource "aws_key_pair" "provesi_team" {
@@ -268,96 +285,89 @@ resource "aws_instance" "mongodb" {
     cd /proyecto
     sudo git clone -b deployments ${local.repository} Provesi
 
-    sudo apt-get update -y
-    sudo apt-get upgrade -y
-    sudo apt-get install -y curl gnupg
+    # Variables
+    DB_NAME="provesi_mongodb"
+    DB_USER="provesi_user"
+    DB_PASSWORD="scrumteam"
 
-    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
-      sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-server-7.0.gpg
+    # Install Docker
+    apt-get update -y
+    apt-get install -y docker.io
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
 
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | \
-      sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+    # Create MongoDB data directory
+    mkdir -p /data/mongodb
+    chown -R 999:999 /data/mongodb
 
-    sudo apt-get update
-    sudo apt-get install -y mongodb-org
-
-    sudo mkdir -p /var/lib/mongodb
-    sudo mkdir -p /var/log/mongodb
-    sudo chown -R mongodb:mongodb /var/lib/mongodb
-    sudo chown -R mongodb:mongodb /var/log/mongodb
-
-    sudo tee /etc/mongod.conf > /dev/null <<'EOF'
-storage:
-  dbPath: /var/lib/mongodb
-  journal:
-    enabled: true
-  wiredTiger:
-    engineConfig:
-      cacheSizeGB: 0.5
-
-systemLog:
-  destination: file
-  logAppend: true
-  path: /var/log/mongodb/mongod.log
-  logRotate: reopen
-
-net:
-  port: 27017
-  bindIp: 0.0.0.0
-
-security:
-  authorization: enabled
-
-processManagement:
-  timeZoneInfo: /usr/share/zoneinfo
-  fork: false
-
-operationProfiling:
-  mode: slowOp
-  slowOpThresholdMs: 100
-EOF
-
-    sudo systemctl daemon-reload
-    sudo systemctl start mongod
-    sudo systemctl enable mongod
-
-    sleep 10
-
-    mongosh admin --eval '
+    # Create init script for MongoDB
+    cat > /tmp/mongo-init.js <<'MONGOEOF'
+    db = db.getSiblingDB('provesi_mongodb');
+    
     db.createUser({
-      user: "admin",
-      pwd: "scrumteam_admin_2024",
-      roles: [{ role: "root", db: "admin" }]
-    })
-    ' || echo "Usuario admin ya existe"
-
-    mongosh -u admin -p scrumteam_admin_2024 --authenticationDatabase admin <<'EOMONGO'
-    use provesi_mongodb
-
-    db.createUser({
-      user: "provesi_user",
-      pwd: "scrumteam",
+      user: 'provesi_user',
+      pwd: 'scrumteam',
       roles: [
-        { role: "readWrite", db: "provesi_mongodb" },
-        { role: "dbAdmin", db: "provesi_mongodb" }
+        { role: 'readWrite', db: 'provesi_mongodb' },
+        { role: 'dbAdmin', db: 'provesi_mongodb' }
       ]
-    })
+    });
 
-    db.createCollection("pedidos")
-    db.createCollection("productos")
-    db.createCollection("bodegas")
+    db.createCollection('pedidos');
+    db.createCollection('productos');
+    db.createCollection('bodegas');
 
-    db.pedidos.createIndex({ "postgres_id": 1 }, { unique: true })
-    db.pedidos.createIndex({ "estado": 1, "fecha_creacion": -1 })
-    db.productos.createIndex({ "codigo": 1 }, { unique: true })
-    db.productos.createIndex({ "nombre": "text" })
-    db.bodegas.createIndex({ "codigo": 1 }, { unique: true })
+    db.pedidos.createIndex({ 'postgres_id': 1 }, { unique: true });
+    db.pedidos.createIndex({ 'estado': 1 });
+    db.pedidos.createIndex({ 'fecha_creacion': -1 });
 
-    print("✅ Base de datos configurada")
-    EOMONGO
+    db.productos.createIndex({ 'codigo': 1 }, { unique: true });
+    db.productos.createIndex({ 'nombre': 'text', 'descripcion': 'text' });
 
-    mongosh -u provesi_user -p scrumteam --authenticationDatabase provesi_mongodb provesi_mongodb --eval "db.getCollectionNames()"
+    db.bodegas.createIndex({ 'codigo': 1 }, { unique: true });
+    db.bodegas.createIndex({ 'ciudad': 1 });
 
+    print('MongoDB inicializado correctamente para Provesi WMS');
+    MONGOEOF
+
+    mkdir -p /docker-entrypoint-initdb.d
+    cp /tmp/mongo-init.js /docker-entrypoint-initdb.d/
+
+    # Run MongoDB with authentication
+    docker run -d \
+      --name mongodb \
+      --restart=always \
+      -p 27017:27017 \
+      -v /data/mongodb:/data/db \
+      -v /docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro \
+      -e MONGO_INITDB_ROOT_USERNAME=admin \
+      -e MONGO_INITDB_ROOT_PASSWORD=adminpassword \
+      -e MONGO_INITDB_DATABASE=provesi_mongodb \
+      mongo:7.0 --auth
+
+    # Wait for MongoDB to be ready
+    sleep 30
+
+    # Create application user
+    docker exec mongodb mongosh --username admin --password adminpassword --authenticationDatabase admin --eval "
+    db = db.getSiblingDB('provesi_mongodb');
+    try {
+      db.createUser({
+        user: 'provesi_user',
+        pwd: 'scrumteam',
+        roles: [
+          { role: 'readWrite', db: 'provesi_mongodb' },
+          { role: 'dbAdmin', db: 'provesi_mongodb' }
+        ]
+      });
+      print('Usuario creado exitosamente');
+    } catch (e) {
+      print('Usuario ya existe o error: ' + e);
+    }
+    "
+
+    echo "MongoDB deployment completed successfully!"
   EOT
 
   tags = merge(local.common_tags, {
@@ -369,7 +379,7 @@ EOF
 # ---------- EC2 - Servicio de Reportes ----------
 
 resource "aws_instance" "servicio_reportes" {
-  ami                         = "ami-051685736c7b35f95"
+  ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
@@ -382,31 +392,36 @@ resource "aws_instance" "servicio_reportes" {
     #!/bin/bash
     set -e
 
-    exec > >(tee /var/log/user-data.log)
-    exec 2>&1
+    exec > >(tee /var/log/user-data.log) 2>&1
 
+    # SSH key
     echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
     chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
     chmod 600 /home/ec2-user/.ssh/authorized_keys
 
-    sudo dnf install -y git docker
-    sudo systemctl enable docker
-    sudo systemctl start docker
+    # Install Docker
+    yum update -y
+    yum install -y docker git
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ec2-user
 
+    # Wait for Docker
     sleep 10
 
+    # Clone repository
     mkdir -p /proyecto
     cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository}
-    fi
-
+    git clone -b ${local.branch} ${local.repository} Provesi || true
     cd Provesi/servicio_reportes
 
+    # Build Docker image
     docker build -t servicio-reportes:latest .
 
-    docker run -d --name servicio-reportes --restart=always \
+    # Run container
+    docker run -d \
+      --name servicio-reportes \
+      --restart=always \
       -p 8000:8000 \
       -e DATABASE_HOST=${aws_instance.database.private_ip} \
       -e DATABASE_NAME=provesi_db \
@@ -421,9 +436,7 @@ resource "aws_instance" "servicio_reportes" {
       -e MONGODB_AUTH_SOURCE=provesi_mongodb \
       servicio-reportes:latest
 
-    sleep 10
-    docker ps | grep servicio-reportes || echo "⚠️ Reportes no está corriendo"
-
+    echo "Servicio de Reportes deployment completed!"
   EOT
 
   tags = merge(local.common_tags, {
@@ -437,12 +450,12 @@ resource "aws_instance" "servicio_reportes" {
   ]
 }
 
-# ---------- EC2 - Manejador Pedidos (a, b, c) ----------
+# ---------- EC2 - Manejador de Pedidos ----------
 
 resource "aws_instance" "manejador_pedidos" {
   for_each = toset(["a", "b", "c"])
 
-  ami                         = "ami-051685736c7b35f95"
+  ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
@@ -453,34 +466,26 @@ resource "aws_instance" "manejador_pedidos" {
 
   user_data = <<-EOT
     #!/bin/bash
+    set -e
 
-    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
+    exec > >(tee /var/log/user-data.log) 2>&1
 
-    export DATABASE_HOST=${aws_instance.database.private_ip}
-    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
-    export REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000
-    
-    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
-    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
-    echo "REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000" >> /etc/environment
+    echo "${local.ssh_public_keys[1]}" >> /home/ubuntu/.ssh/authorized_keys
+    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+    chmod 600 /home/ubuntu/.ssh/authorized_keys
 
-    sudo dnf install -y git docker
-    sudo systemctl enable docker
-    sudo systemctl start docker
+    apt-get update -y
+    apt-get install -y docker.io git
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
+
+    sleep 10
 
     mkdir -p /proyecto
     cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository} Provesi
-    fi
-
+    git clone -b ${local.branch} ${local.repository} Provesi || true
     cd Provesi
-
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_pedidos/Dockerfile
-    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_pedidos/Dockerfile
 
     docker build -t manejador-pedidos-app -f manejador_pedidos/Dockerfile .
 
@@ -504,12 +509,12 @@ resource "aws_instance" "manejador_pedidos" {
   ]
 }
 
-# ---------- EC2 - Manejador Inventario (a, b) ----------
+# ---------- EC2 - Manejador de Inventario ----------
 
 resource "aws_instance" "manejador_inventario" {
   for_each = toset(["a", "b"])
 
-  ami                         = "ami-051685736c7b35f95"
+  ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
@@ -520,34 +525,26 @@ resource "aws_instance" "manejador_inventario" {
 
   user_data = <<-EOT
     #!/bin/bash
+    set -e
 
-    echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
-    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
-    chmod 600 /home/ec2-user/.ssh/authorized_keys
+    exec > >(tee /var/log/user-data.log) 2>&1
 
-    export DATABASE_HOST=${aws_instance.database.private_ip}
-    export MONGODB_HOST=${aws_instance.mongodb.private_ip}
-    export REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000
-    
-    echo "DATABASE_HOST=${aws_instance.database.private_ip}" >> /etc/environment
-    echo "MONGODB_HOST=${aws_instance.mongodb.private_ip}" >> /etc/environment
-    echo "REPORTES_SERVICE_URL=http://${aws_instance.servicio_reportes.private_ip}:8000" >> /etc/environment
+    echo "${local.ssh_public_keys[1]}" >> /home/ubuntu/.ssh/authorized_keys
+    chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+    chmod 600 /home/ubuntu/.ssh/authorized_keys
 
-    sudo dnf install -y git docker
-    sudo systemctl enable docker
-    sudo systemctl start docker
+    apt-get update -y
+    apt-get install -y docker.io git
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ubuntu
+
+    sleep 10
 
     mkdir -p /proyecto
     cd /proyecto
-
-    if [ ! -d Provesi ]; then
-      git clone ${local.repository} Provesi
-    fi
-
+    git clone -b ${local.branch} ${local.repository} Provesi || true
     cd Provesi
-
-    sudo sed -i "s/<DATABASE_HOST>/${aws_instance.database.private_ip}/g" manejador_inventario/Dockerfile
-    sudo sed -i "s/<MONGODB_HOST>/${aws_instance.mongodb.private_ip}/g" manejador_inventario/Dockerfile
 
     docker build -t manejador-inventario-app -f manejador_inventario/Dockerfile .
 
@@ -571,10 +568,10 @@ resource "aws_instance" "manejador_inventario" {
   ]
 }
 
-# ---------- EC2 - Kong API Gateway (SIMPLIFICADO Y ROBUSTO) ----------
+# ---------- EC2 - Kong API Gateway (CORREGIDO) ----------
 
 resource "aws_instance" "kong" {
-  ami                         = "ami-051685736c7b35f95"
+  ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.provesi_team.key_name
   associate_public_ip_address = true
@@ -583,31 +580,32 @@ resource "aws_instance" "kong" {
     aws_security_group.traffic_ssh.id
   ]
 
-  # SCRIPT ULTRA SIMPLIFICADO - Sin comandos que puedan fallar
-  user_data = base64encode(<<-EOT
+  # CORREGIDO: Usar user_data sin base64encode (AWS lo codifica automáticamente)
+  user_data = <<-EOT
     #!/bin/bash
+    
+    exec > >(tee /var/log/user-data.log) 2>&1
     
     # SSH key
     echo "${local.ssh_public_keys[1]}" >> /home/ec2-user/.ssh/authorized_keys
+    chown ec2-user:ec2-user /home/ec2-user/.ssh/authorized_keys
+    chmod 600 /home/ec2-user/.ssh/authorized_keys
     
-    # Instalar solo lo esencial
-    dnf install -y docker git || exit 0
-    
-    # Docker
-    systemctl start docker || exit 0
-    systemctl enable docker || exit 0
+    # Instalar Docker
+    yum update -y
+    yum install -y docker git
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ec2-user
     
     # Esperar Docker
     sleep 15
     
-    # Clonar repo SIN fallar si ya existe
-    mkdir -p /proyecto
-    cd /proyecto
-    git clone ${local.repository} 2>/dev/null || cd Provesi
-    cd Provesi 2>/dev/null || exit 0
+    # Crear directorio para Kong config
+    mkdir -p /proyecto/kong
     
-    # Crear kong.yml directamente (sin sed que pueda fallar)
-    cat > /tmp/kong.yml <<'KONGEOF'
+    # Crear kong.yml directamente con las IPs de los backends
+    cat > /proyecto/kong/kong.yml <<'KONGEOF'
 _format_version: "2.1"
 
 services:
@@ -645,27 +643,27 @@ upstreams:
       - target: ${aws_instance.manejador_inventario["b"].private_ip}:8080
 KONGEOF
     
-    # Copiar config
-    cp /tmp/kong.yml /proyecto/Provesi/kong.yml 2>/dev/null || exit 0
-    
-    # Network
+    # Network para Kong
     docker network create kong-network 2>/dev/null || true
     
-    # Ejecutar Kong (sin verificaciones que puedan fallar)
+    # Ejecutar Kong
     docker run -d \
       --name kong \
       --network=kong-network \
       --restart=always \
-      -v /proyecto/Provesi:/kong/declarative/ \
+      -v /proyecto/kong:/kong/declarative/ \
       -e "KONG_DATABASE=off" \
       -e "KONG_DECLARATIVE_CONFIG=/kong/declarative/kong.yml" \
+      -e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+      -e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+      -e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+      -e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
       -p 8000:8000 \
-      kong/kong-gateway 2>/dev/null || exit 0
+      -p 8001:8001 \
+      kong/kong-gateway:latest
     
-    # Fin - sin verificaciones
-    sleep 5
+    echo "Kong deployment completed!"
   EOT
-  )
 
   tags = merge(local.common_tags, {
     Name = "${var.project_prefix}-kong",
