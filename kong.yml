@@ -29,8 +29,8 @@ upstreams:
         weight: 100
       - target: <PEDIDOS_B_HOST>:8080
         weight: 100
-      - target: <PEDIDOS_C_HOST>:8080
-        weight: 100
+      #- target: <PEDIDOS_C_HOST>:8080
+      #  weight: 100
 
     healthchecks:
       threshold: 50
