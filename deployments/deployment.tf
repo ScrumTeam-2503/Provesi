@@ -426,6 +426,77 @@ resource "aws_instance" "kong" {
   ]
 }
 
+# ---------- EC2 - Manejador de busquedas ----------
+
+resource "aws_instance" "manejador_busquedas" {
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  associate_public_ip_address = true
+
+  vpc_security_group_ids = [
+    aws_security_group.traffic_api.id,
+    aws_security_group.traffic_ssh.id
+  ]
+
+  depends_on = [aws_instance.mongodb]
+
+  user_data = <<-EOT
+    #!/bin/bash
+    set -e
+    exec > >(tee /var/log/user-data.log) 2>&1
+
+    echo "✅ Configurando variable de entorno Mongo"
+    echo "PROVESI_DB_HOST=${aws_instance.mongodb.public_ip}" | sudo tee -a /etc/environment
+    source /etc/environment
+
+    echo "✅ Instalando dependencias del sistema"
+    sudo apt-get update -y
+    sudo apt-get install -y python3-pip git python3-venv build-essential
+
+    echo "✅ Clonando repositorio"
+    sudo mkdir -p /proyecto
+    cd /proyecto
+    sudo git clone https://github.com/ScrumTeam-2503/Manejador_busquedas.git Provesi
+    cd Provesi
+
+    echo "✅ Creando entorno virtual"
+    python3 -m venv venv
+    source venv/bin/activate
+
+    echo "✅ Instalando requirements"
+    pip install --upgrade pip
+    pip install -r requirements.txt
+
+    echo "✅ Creando servicio systemd para FastAPI"
+    sudo tee /etc/systemd/system/provesi-api.service > /dev/null <<EOF
+    [Unit]
+    Description=Provesi FastAPI
+    After=network.target
+
+    [Service]
+    User=ubuntu
+    WorkingDirectory=/proyecto/Provesi
+    ExecStart=/proyecto/Provesi/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+    Restart=always
+    Environment=PROVESI_DB_HOST=${aws_instance.mongodb.public_ip}
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable provesi-api
+    sudo systemctl start provesi-api
+
+    echo "✅ FastAPI corriendo automáticamente"
+  EOT
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_prefix}-manejador-busquedas",
+    Role = "manejador-busquedas"
+  })
+}
+
 # ---------- EC2 - PostgreSQL DB ----------
 
 resource "aws_instance" "database" {
@@ -619,6 +690,11 @@ output "ssh_connection_info" {
 output "kong_public_ip" {
   value       = aws_instance.kong.public_ip
   description = "IP pública de Kong API Gateway"
+}
+
+output "manejador_busquedas_public_ip" {
+  value       = aws_instance.manejador_busquedas
+  description = "IP pública del manejador de busquedas"
 }
 
 output "database_private_ip" {
