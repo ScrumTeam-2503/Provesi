@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reportes - WMS Provesi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">
+                <i class="bi bi-file-earmark-bar-graph"></i> Reportes
+            </h1>
+            <p class="lead text-muted">Genera reportes en PDF del sistema WMS Provesi</p>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Estado del servicio -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="service-status" class="alert alert-info d-flex align-items-center" role="alert">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <div>Verificando estado del servicio de reportes...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Inventario -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam"></i> Reporte de Inventario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte completo del inventario incluyendo productos, bodegas, 
+                        estanterías y niveles de ocupación.
+                    </p>
+                    <form id="form-inventario" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="bodega_codigo" class="form-label">Filtrar por Bodega (opcional)</label>
+                            <input type="text" class="form-control" id="bodega_codigo" name="bodega_codigo" 
+                                   placeholder="Ej: BOG01">
+                            <div class="form-text">Deja vacío para incluir todas las bodegas</div>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-download"></i> Descargar Reporte PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Pedidos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cart-check"></i> Reporte de Pedidos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte de pedidos con estadísticas por estado y método de pago.
+                    </p>
+                    <form id="form-pedidos" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="estado" class="form-label">Estado (opcional)</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="">Todos</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="procesando">Procesando</option>
+                                <option value="enviado">Enviado</option>
+                                <option value="entregado">Entregado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_inicio_pedidos" class="form-label">Fecha Inicio (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_inicio_pedidos" name="fecha_inicio">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_fin_pedidos" class="form-label">Fecha Fin (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_fin_pedidos" name="fecha_fin">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-download"></i> Descargar Reporte PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Productos Más Vendidos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy"></i> Productos Más Vendidos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte de los productos más vendidos en un período determinado.
+                    </p>
+                    <form id="form-productos-vendidos" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="limite" class="form-label">Cantidad de productos</label>
+                            <select class="form-select" id="limite" name="limite">
+                                <option value="5">Top 5</option>
+                                <option value="10" selected>Top 10</option>
+                                <option value="20">Top 20</option>
+                                <option value="50">Top 50</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_inicio_productos" class="form-label">Fecha Inicio (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_inicio_productos" name="fecha_inicio">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_fin_productos" class="form-label">Fecha Fin (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_fin_productos" name="fecha_fin">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-download"></i> Descargar Reporte PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Capacidad de Bodegas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-building"></i> Capacidad de Bodegas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte de la capacidad y ocupación de todas las bodegas.
+                    </p>
+                    <button id="btn-bodegas-capacidad" class="btn btn-info text-white">
+                        <i class="bi bi-download"></i> Descargar Reporte PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporte de Ventas por Fecha -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Ventas por Fecha
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Genera un reporte de ventas agrupadas por período de tiempo.
+                    </p>
+                    <form id="form-ventas-fecha" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="agrupar_por" class="form-label">Agrupar por</label>
+                            <select class="form-select" id="agrupar_por" name="agrupar_por">
+                                <option value="dia">Día</option>
+                                <option value="mes" selected>Mes</option>
+                                <option value="año">Año</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_inicio_ventas" class="form-label">Fecha Inicio (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_inicio_ventas" name="fecha_inicio">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_fin_ventas" class="form-label">Fecha Fin (opcional)</label>
+                            <input type="date" class="form-control" id="fecha_fin_ventas" name="fecha_fin">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-download"></i> Descargar Reporte PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast para notificaciones -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notificación</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toast-message">
+            <!-- Mensaje dinámico -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar estado del servicio al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    verificarServicioReportes();
+});
+
+function verificarServicioReportes() {
+    fetch('{% url "verificar_servicio_reportes" %}')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('service-status');
+            if (data.status === 'ok') {
+                statusDiv.className = 'alert alert-success d-flex align-items-center';
+                statusDiv.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i>
+                    <div>
+                        <strong>Servicio de reportes disponible</strong><br>
+                        <small>${data.service} - Versión ${data.version}</small>
+                    </div>
+                `;
+            } else {
+                statusDiv.className = 'alert alert-danger d-flex align-items-center';
+                statusDiv.innerHTML = `
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>Servicio de reportes no disponible</strong><br>
+                        <small>${data.message || 'Error desconocido'}</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            const statusDiv = document.getElementById('service-status');
+            statusDiv.className = 'alert alert-danger d-flex align-items-center';
+            statusDiv.innerHTML = `
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <div>
+                    <strong>Error al verificar el servicio</strong><br>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        });
+}
+
+function mostrarNotificacion(mensaje, tipo = 'info') {
+    const toast = document.getElementById('notification-toast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastHeader = toast.querySelector('.toast-header');
+    
+    toastMessage.textContent = mensaje;
+    
+    // Cambiar color según el tipo
+    toastHeader.className = 'toast-header';
+    if (tipo === 'success') {
+        toastHeader.classList.add('bg-success', 'text-white');
+    } else if (tipo === 'error') {
+        toastHeader.classList.add('bg-danger', 'text-white');
+    }
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+function descargarReporte(url, formData = null) {
+    // Mostrar notificación de descarga
+    mostrarNotificacion('Generando reporte, por favor espera...', 'info');
+    
+    // Construir URL con parámetros
+    if (formData) {
+        const params = new URLSearchParams(formData);
+        url += '?' + params.toString();
+    }
+    
+    // Crear un enlace temporal y hacer click
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mostrar notificación de éxito después de un breve delay
+    setTimeout(() => {
+        mostrarNotificacion('Reporte descargado exitosamente', 'success');
+    }, 1000);
+}
+
+// Formulario de inventario
+document.getElementById('form-inventario').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    descargarReporte('{% url "descargar_reporte_inventario" %}', formData);
+});
+
+// Formulario de pedidos
+document.getElementById('form-pedidos').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    descargarReporte('{% url "descargar_reporte_pedidos" %}', formData);
+});
+
+// Formulario de productos vendidos
+document.getElementById('form-productos-vendidos').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    descargarReporte('{% url "descargar_reporte_productos_vendidos" %}', formData);
+});
+
+// Botón de capacidad de bodegas
+document.getElementById('btn-bodegas-capacidad').addEventListener('click', function() {
+    descargarReporte('{% url "descargar_reporte_bodegas_capacidad" %}');
+});
+
+// Formulario de ventas por fecha
+document.getElementById('form-ventas-fecha').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    descargarReporte('{% url "descargar_reporte_ventas_fecha" %}', formData);
+});
+</script>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.toast-header.bg-success .btn-close,
+.toast-header.bg-danger .btn-close {
+    filter: brightness(0) invert(1);
+}
+</style>
+{% endblock %}
+

@@ -1,0 +1,37 @@
+# Configuración de Kong para el Servicio de Reportes
+# Agregar esta configuración al archivo kong.yml principal
+
+services:
+  - name: servicio-reportes
+    url: http://servicio-reportes:8000
+    routes:
+      - name: reportes-route
+        paths:
+          - /reportes
+        strip_path: false
+        methods:
+          - GET
+          - POST
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+          exposed_headers:
+            - X-Auth-Token
+          credentials: true
+          max_age: 3600
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: local
+

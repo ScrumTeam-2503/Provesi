@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  servicio-reportes:
+    build: .
+    container_name: provesi-reportes
+    ports:
+      - "8000:8000"
+    environment:
+      # PostgreSQL Configuration
+      DATABASE_HOST: ${DATABASE_HOST:-34.229.88.183}
+      DATABASE_NAME: ${DATABASE_NAME:-provesi_db}
+      DATABASE_USER: ${DATABASE_USER:-provesi_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-scrumteam}
+      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      
+      # MongoDB Configuration
+      # En producción, usar la IP del servidor MongoDB
+      MONGODB_HOST: ${MONGODB_HOST:-mongodb}
+      MONGODB_PORT: ${MONGODB_PORT:-27017}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-provesi_mongodb}
+      MONGODB_USER: ${MONGODB_USER:-provesi_user}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD:-scrumteam}
+      MONGODB_AUTH_SOURCE: ${MONGODB_AUTH_SOURCE:-provesi_mongodb}
+    restart: unless-stopped
+    networks:
+      - provesi-network
+
+networks:
+  provesi-network:
+    driver: bridge
+
